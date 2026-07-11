@@ -1,29 +1,49 @@
 {
-    // Motor electrical parameters (per-phase, stator-referred)
-    "Rs": 0.060,       // Stator resistance, ohm/phase
-    "Rr": 0.055,       // Rotor resistance referred to stator, ohm/phase
+    // ============================================================
+    // 1. Equivalent circuit parameters (per-phase, stator-referred)
+    // ============================================================
+    "Rs": 0.069966,       // Stator resistance, ohm/phase
+    "Rr": 0.072979,       // Rotor resistance referred to stator, ohm/phase
 
     // Uncomment ONE block below — EITHER reactances OR inductances:
-
     // --- Reactances at frequency f ---
-    // "Xs": 0.340,       // Stator leakage reactance at f, ohm/phase
-    // "Xr": 0.330,       // Rotor leakage reactance referred to stator at f, ohm/phase
-    // "Xm": 10.600,      // Magnetizing reactance at f, ohm/phase
+    "Xs": 1.272654,       // Stator leakage reactance at f, ohm/phase
+    "Xr": 0.986283,       // Rotor leakage reactance referred to stator at f, ohm/phase
+    "Xm": 42.29672,      // Magnetizing reactance at f, ohm/phase
 
     // --- Inductances (comment reactances above and uncomment these) ---
-    "Ls": 0.0005, // Stator leakage inductance, H
-    "Lr": 0.0010, // Rotor leakage inductance referred to stator, H
-    "Lm": 0.0100, // Magnetizing inductance, H
+    // "Ls": 0.0005, // Stator leakage inductance, H
+    // "Lr": 0.0010, // Rotor leakage inductance referred to stator, H
+    // "Lm": 0.0100, // Magnetizing inductance, H
 
-    // Mechanical and operating conditions
-    "J": 1.0,          // Total inertia referred to motor shaft, kg*m^2
-    "slip": 0.010,     // Pre-fault slip, pu
-    "V_LL": 3810.0,     // Pre-fault line-line RMS voltage, V RMS
-    "CONNECTION": "wye", // Stator winding connection: "wye" or "delta"
+    // ============================================================
+    // 2. Nameplate rated values
+    // ============================================================
+    "V_LL": 4000.0,     // Pre-fault line-line RMS voltage, V RMS
     "f": 60.0,         // Electrical frequency, Hz
-    "pole_pairs": 2,   // Number of pole pairs, dimensionless
+    "poles": 2,        // Total number of poles (e.g. 2, 4, 6...); code divides by 2 internally
+    "slip": 0.0050,    // Pre-fault slip, pu (used as initial guess when HP/kW provided)
 
-    // Simulation
+    // Rated mechanical output power (uncomment ONE; if neither provided, slip is used as-is)
+    "HP": 2000,        // Horsepower (1 HP = 746 W)
+    // "kW": 372.85,   // Kilowatts
+
+    "CONNECTION": "wye", // Stator winding connection: "wye" or "delta"
+
+    // ============================================================
+    // 3. Inertia
+    // ============================================================
+    // Rotor inertia (uncomment ONE):
+    "ROTOR_GD2": 40.670,   // Rotor flywheel effect (GD^2), kg*m^2; J_rotor = GD^2/4
+    // "ROTOR_WK2": 23.73, // Rotor flywheel effect (WK^2), lb*ft^2; J_rotor = WK^2 * 0.04214
+
+    // Load inertia — optional (default 0 for worst-case transient if unknown):
+    // "LOAD_GD2": 10.0,    // Load flywheel effect, kg*m^2
+    // "LOAD_WK2": 5.0,     // Load flywheel effect, lb*ft^2
+
+    // ============================================================
+    // 4. Simulation / solver options
+    // ============================================================
     "T_END": 0.200,    // Simulation end time, s
     "N_POINTS": 5000,  // Number of time steps, dimensionless
 
@@ -34,6 +54,5 @@
     // Quick calculation options
     "DC_OFFSET_FACTOR": 0.0,     // First-cycle asymmetry sensitivity (0 = none, 1 = strong), pu
     "FAULT_ANGLE_DEG": 0.0,      // Fault inception angle for dc sensitivity term, deg
-    "TORQUE_FREQUENCY_MODE": "line"  // Torque oscillation frequency: 'line' or 'rotor', enum
+    "TORQUE_FREQUENCY_MODE": "rotor"  // Torque oscillation frequency: 'line' or 'rotor', enum
 }
-

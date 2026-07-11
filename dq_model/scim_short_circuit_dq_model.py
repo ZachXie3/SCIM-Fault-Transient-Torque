@@ -20,11 +20,31 @@ cfg = json.loads(text)
 
 Rs = cfg["Rs"]
 Rr = cfg["Rr"]
-J = cfg["J"]
+
+# Accept ROTOR_GD2 (kg·m²) or ROTOR_WK2 (lb·ft²) for rotor inertia
+if "ROTOR_GD2" in cfg:
+    J_rotor = cfg["ROTOR_GD2"] / 4.0
+elif "ROTOR_WK2" in cfg:
+    J_rotor = cfg["ROTOR_WK2"] * 0.042140
+else:
+    raise ValueError("Rotor inertia: one of ROTOR_GD2 (kg·m²) or ROTOR_WK2 (lb·ft²) must be provided.")
+
+# Optional load inertia (default 0 for worst-case transient)
+if "LOAD_GD2" in cfg and "LOAD_WK2" in cfg:
+    raise ValueError("Provide EITHER 'LOAD_GD2' or 'LOAD_WK2', not both.")
+if "LOAD_GD2" in cfg:
+    J_load = cfg["LOAD_GD2"] / 4.0
+elif "LOAD_WK2" in cfg:
+    J_load = cfg["LOAD_WK2"] * 0.042140
+else:
+    J_load = 0.0
+
+J = J_rotor + J_load
+
 slip = cfg["slip"]
 V_LL = cfg["V_LL"]
 f = cfg["f"]
-pole_pairs = cfg["pole_pairs"]
+pole_pairs = cfg["poles"] // 2
 
 # Accept either reactances (Xs, Xr, Xm) or inductances (Ls, Lr, Lm)
 omega_s = 2.0 * np.pi * f
@@ -58,6 +78,69 @@ def validate_inputs():
         raise ValueError("Rs, Rr, V_LL, f, and pole_pairs must be positive.")
     if USE_SPEED_DYNAMICS and J <= 0:
         raise ValueError("J must be positive when speed dynamics are enabled.")
+
+# Optional: derive slip from nameplate power when HP or kW is provided
+power_provided = False
+P_mech_W = None
+if "HP" in cfg and "kW" in cfg:
+    raise ValueError("Provide EITHER 'HP' or 'kW', not both.")
+if "HP" in cfg:
+    P_mech_W = cfg["HP"] * 746.0
+    power_provided = True
+elif "kW" in cfg:
+    P_mech_W = cfg["kW"] * 1000.0
+    power_provided = True
+
+if power_provided:
+    if cfg.get("CONNECTION", "wye").lower() == "delta":
+        V_ph_s = V_LL
+    else:
+        V_ph_s = V_LL / np.sqrt(3.0)
+    if "Ls" in cfg and "Lr" in cfg and "Lm" in cfg:
+        Xs_s = omega_s * cfg["Ls"]
+        Xr_s = omega_s * cfg["Lr"]
+        Xm_s = omega_s * cfg["Lm"]
+    else:
+        Xs_s = cfg["Xs"]
+        Xr_s = cfg["Xr"]
+        Xm_s = cfg["Xm"]
+
+    def _torque_from_slip(s):
+        Zr = Rr / s + 1j * Xr_s
+        Zm = 1j * Xm_s
+        Zp = (Zm * Zr) / (Zm + Zr)
+        Is = V_ph_s / (Rs + 1j * Xs_s + Zp)
+        Eag = V_ph_s - Is * (Rs + 1j * Xs_s)
+        Ir = Eag / (Rr / s + 1j * Xr_s)
+        o_syn = omega_s / pole_pairs
+        return 3.0 * abs(Ir) ** 2 * (Rr / s) / o_syn
+
+    o_syn = omega_s / pole_pairs
+    def _f(s):
+        return _torque_from_slip(s) - P_mech_W / ((1.0 - s) * o_syn)
+
+    s_low = 1e-4
+    s_high = 0.1
+    f_low, f_high = _f(s_low), _f(s_high)
+    while f_low * f_high > 0 and s_high < 0.8:
+        s_high = min(s_high * 2, 0.8)
+        f_high = _f(s_high)
+    if f_low * f_high > 0:
+        print("Warning: slip derivation did not bracket root; using provided slip.")
+    else:
+        for _ in range(100):
+            s_mid = (s_low + s_high) / 2.0
+            f_mid = _f(s_mid)
+            if abs(f_mid) < 1e-10:
+                break
+            if f_low * f_mid <= 0:
+                s_high = s_mid
+            else:
+                s_low = s_mid
+                f_low = f_mid
+        s_derived = (s_low + s_high) / 2.0
+        print(f"Derived slip from nameplate power: {s_derived:.6g} pu (was {slip:.6g})")
+        slip = s_derived
 
 
 def currents_from_flux(psi_s, psi_r, Ls, Lr, Lm, Delta):
@@ -196,7 +279,13 @@ plt.savefig(png_path, dpi=160)
 plt.show()
 
 print("dq SCIM short-circuit calculation complete")
-print(f"T_nom = {T_nom:.6g} N*m")
+print(f"T_nom (from equivalent circuit) = {T_nom:.6g} N*m")
+if power_provided:
+    T_full_load = P_mech_W / omega_m0
+    pct_diff = (T_nom - T_full_load) / T_full_load * 100.0
+    print(f"Speed = {omega_m0:.4g} rad/s  ({omega_m0 * 60 / (2*np.pi):.4g} RPM)")
+    print(f"T_full_load (from nameplate power) = {T_full_load:.6g} N*m")
+    print(f"T_nom vs T_full_load: {pct_diff:+.4g} % difference ({(T_nom/T_full_load - 1)*100:.4g} % error)")
 print(f"Initial stator current peak magnitude = {abs(Is0):.6g} A")
 print(f"Initial rotor current peak magnitude = {abs(Ir0):.6g} A")
 print(f"Initial mechanical speed = {omega_m0:.6g} rad/s")

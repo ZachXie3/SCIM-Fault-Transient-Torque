@@ -19,18 +19,38 @@ Use per-phase, stator-referred parameters.
 | $X_s$ | `Xs` | stator leakage reactance | $\Omega$ at frequency $f$ |
 | $X_r$ | `Xr` | rotor leakage reactance referred to stator | $\Omega$ at frequency $f$ |
 | $X_m$ | `Xm` | magnetizing reactance | $\Omega$ at frequency $f$ |
-| $J$ | `J` | total inertia referred to motor shaft | kg·m$^2$ |
-| $s$ | `slip` | pre-fault slip | per unit |
+| $GD^2_{\text{rotor}}$ | `ROTOR_GD2` | rotor flywheel effect (cylindrical assumption) | kg·m$^2$ (use $J=GD^2/4$) |
+| $WK^2_{\text{rotor}}$ | `ROTOR_WK2` | rotor flywheel effect (US customary) | lb·ft$^2$ (use $J=WK^2\times0.04214$) |
+| $GD^2_{\text{load}}$ | `LOAD_GD2` | load flywheel effect (optional) | kg·m$^2$ (default 0 for worst case) |
+| $WK^2_{\text{load}}$ | `LOAD_WK2` | load flywheel effect (optional) | lb·ft$^2$ (default 0 for worst case) |
+| $s$ | `slip` | pre-fault slip (see note on slip derivation) | per unit |
 | $V_{LL}$ | `V_LL` | pre-fault line-line RMS voltage | V |
 | &nbsp; | `CONNECTION` | stator winding connection | `"wye"` or `"delta"` |
 | $f$ | `f` | electrical frequency | Hz |
-| $p$ | `pole_pairs` | pole pairs | dimensionless |
+| $p$ | `poles` | total number of poles, $p = \\text{poles}/2$ | e.g. 2, 4, 6... |
+| $P_{HP}$ | `HP` | rated mechanical output power (alt. to `kW`) | horsepower, 1 HP = 746 W |
+| $P_{kW}$ | `kW` | rated mechanical output power (alt. to `HP`) | kW |
+| $L_{\ell s}$ | `Ls` | stator leakage inductance | H (alternative to $X_s$) |
+| $L_{\ell r}$ | `Lr` | rotor leakage inductance referred to stator | H (alternative to $X_r$) |
+| $L_m$ | `Lm` | magnetizing inductance | H (alternative to $X_m$) |
 
 Electrical angular frequency:
 
 $$
 \omega_s=2\pi f
 $$
+
+### Slip derivation from nameplate power
+
+When either `HP` or `kW` is provided in `input.jsonc`, the script **derives** the full-load slip by solving
+
+$$
+T_{nom}(s) = \frac{P_{mech}}{(1-s)\,\omega_{syn,m}}
+$$
+
+for $s$ using bisection, where $T_{nom}(s)$ is the equivalent-circuit torque at slip $s$ and $P_{mech}$ is obtained from `HP` ($\times 746$) or `kW` ($\times 1000$). The provided `slip` value is then overridden. If neither `HP` nor `kW` is given, the user-supplied `slip` is used as-is.
+
+Mechanical speed and ground-truth full-load torque are printed for comparison.
 
 > **Note:** The script accepts **either** reactances ($X_s, X_r, X_m$) **or** inductances ($L_{\ell s}, L_{\ell r}, L_m$) in `input.jsonc`. When inductances are given, they are used directly; otherwise reactances are converted via $L = X / \omega_s$.
 
@@ -222,7 +242,7 @@ The actual first-cycle waveform depends on the point-on-wave angle. Use `INITIAL
 
 The companion Python script:
 
-1. declares user-editable parameters at the top;
+1. reads motor and simulation parameters from `input.jsonc`;
 2. computes initial steady-state currents and fluxes from slip;
 3. integrates the short-circuit dynamic model over $0$ to $0.2$ s;
 4. plots $T_{fault}/T_{nominal}$ in percent;

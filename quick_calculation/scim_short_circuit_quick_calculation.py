@@ -20,11 +20,10 @@ cfg = json.loads(text)
 
 Rs = cfg["Rs"]
 Rr = cfg["Rr"]
-J = cfg["J"]
 slip = cfg["slip"]
 V_LL = cfg["V_LL"]
 f = cfg["f"]
-pole_pairs = cfg["pole_pairs"]
+pole_pairs = cfg["poles"] // 2
 
 # Accept either reactances (Xs, Xr, Xm) or inductances (Ls, Lr, Lm)
 omega_s = 2.0 * np.pi * f
@@ -46,17 +45,69 @@ TORQUE_FREQUENCY_MODE = cfg["TORQUE_FREQUENCY_MODE"]
 # =========================
 # CALCULATION
 # =========================
+if cfg.get("CONNECTION", "wye").lower() == "delta":
+    V_ph = V_LL
+else:
+    V_ph = V_LL / np.sqrt(3.0)
+
+# Optional: derive slip from nameplate power when HP or kW is provided
+if "HP" in cfg and "kW" in cfg:
+    raise ValueError("Provide EITHER 'HP' or 'kW', not both.")
+power_provided = False
+P_mech_W = None
+if "HP" in cfg:
+    P_mech_W = cfg["HP"] * 746.0
+    power_provided = True
+elif "kW" in cfg:
+    P_mech_W = cfg["kW"] * 1000.0
+    power_provided = True
+
+if power_provided:
+    def _torque_from_slip(s):
+        Zr = Rr / s + 1j * Xr
+        Zm = 1j * Xm
+        Zp = (Zm * Zr) / (Zm + Zr)
+        Is = V_ph / (Rs + 1j * Xs + Zp)
+        Eag = V_ph - Is * (Rs + 1j * Xs)
+        Ir = Eag / (Rr / s + 1j * Xr)
+        o_syn = omega_s / pole_pairs
+        return 3.0 * abs(Ir) ** 2 * (Rr / s) / o_syn
+
+    o_syn = omega_s / pole_pairs
+    def _f(s):
+        return _torque_from_slip(s) - P_mech_W / ((1.0 - s) * o_syn)
+
+    s_low = 1e-4
+    s_high = 0.1
+    f_low, f_high = _f(s_low), _f(s_high)
+    # If root not bracketed (torque may cross target twice due to breakdown peak),
+    # widen upper bound until opposite sign is found
+    while f_low * f_high > 0 and s_high < 0.8:
+        s_high = min(s_high * 2, 0.8)
+        f_high = _f(s_high)
+    if f_low * f_high > 0:
+        print("Warning: slip derivation did not bracket root; using provided slip.")
+    else:
+        for _ in range(100):
+            s_mid = (s_low + s_high) / 2.0
+            f_mid = _f(s_mid)
+            if abs(f_mid) < 1e-10:
+                break
+            if f_low * f_mid <= 0:
+                s_high = s_mid
+            else:
+                s_low = s_mid
+                f_low = f_mid
+        s_derived = (s_low + s_high) / 2.0
+        print(f"Derived slip from nameplate power: {s_derived:.6g} pu (was {slip:.6g})")
+        slip = s_derived
+
 if not (0.0 < slip < 1.0):
     raise ValueError("slip must be between 0 and 1 pu for motor operation.")
 if min(Rs, Rr, V_LL, f, pole_pairs) <= 0:
     raise ValueError("Rs, Rr, V_LL, f, and pole_pairs must be positive.")
 
 j = 1j
-omega_s = 2.0 * np.pi * f
-if cfg.get("CONNECTION", "wye").lower() == "delta":
-    V_ph = V_LL
-else:
-    V_ph = V_LL / np.sqrt(3.0)
 
 # Initial steady-state equivalent circuit
 Zr = Rr / slip + j * Xr
@@ -143,7 +194,14 @@ plt.savefig(png_path, dpi=160)
 plt.show()
 
 print("Quick SCIM short-circuit calculation complete")
-print(f"T_nom = {T_nom:.6g} N*m")
+print(f"T_nom (from equivalent circuit) = {T_nom:.6g} N*m")
+if power_provided:
+    omega_m_mech = (1.0 - slip) * omega_s / pole_pairs
+    T_full_load = P_mech_W / omega_m_mech
+    pct_diff = (T_nom - T_full_load) / T_full_load * 100.0
+    print(f"Speed = {omega_m_mech:.4g} rad/s  ({omega_m_mech * 60 / (2*np.pi):.4g} RPM)")
+    print(f"T_full_load (from nameplate power) = {T_full_load:.6g} N*m")
+    print(f"T_nom vs T_full_load: {pct_diff:+.4g} % difference ({(T_nom/T_full_load - 1)*100:.4g} % error)")
 print(f"Xs_sc = {Xs_sc:.6g} ohm, Xr_sc = {Xr_sc:.6g} ohm")
 print(f"Tr0 = {Tr0:.6g} s, Tr_sc = {Tr_sc:.6g} s, Ts_dc = {Ts_dc:.6g} s")
 print(f"I_sc_ac0 = {I_sc_ac0:.6g} A RMS")

@@ -19,12 +19,28 @@ Use per-phase, stator-referred equivalent-circuit quantities.
 | $X_s$ | `Xs` | stator leakage reactance | $\Omega$ at frequency $f$ |
 | $X_r$ | `Xr` | rotor leakage reactance referred to stator | $\Omega$ at frequency $f$ |
 | $X_m$ | `Xm` | magnetizing reactance | $\Omega$ at frequency $f$ |
-| $s$ | `slip` | pre-fault slip | per unit |
-| $J$ | `J` | total inertia referred to motor shaft | kg·m$^2$, optional in quick method |
+| $s$ | `slip` | pre-fault slip (see note on slip derivation) | per unit |
 | $V_{LL}$ | `V_LL` | pre-fault line-line RMS voltage | V |
 | &nbsp; | `CONNECTION` | stator winding connection | `"wye"` or `"delta"` |
 | $f$ | `f` | electrical frequency | Hz |
-| $p$ | `pole_pairs` | pole pairs | dimensionless |
+| $p$ | `poles` | total number of poles, $p = \\text{poles}/2$ | e.g. 2, 4, 6... |
+| $P_{HP}$ | `HP` | rated mechanical output power (alt. to `kW`) | horsepower, 1 HP = 746 W |
+| $P_{kW}$ | `kW` | rated mechanical output power (alt. to `HP`) | kW |
+| &nbsp; | `DC_OFFSET_FACTOR` | first-cycle asymmetry sensitivity | pu (0 = none, 1 = strong) |
+| &nbsp; | `FAULT_ANGLE_DEG` | fault inception angle for dc term | degrees |
+| &nbsp; | `TORQUE_FREQUENCY_MODE` | torque oscillation frequency | `"line"` or `"rotor"` |
+
+### Slip derivation from nameplate power
+
+When either `HP` or `kW` is provided in `input.jsonc`, the script **derives** the full-load slip by solving
+
+$$
+T_{nom}(s) = \frac{P_{mech}}{(1-s)\,\omega_{syn,m}}
+$$
+
+for $s$ using bisection, where $T_{nom}(s)$ is the equivalent-circuit torque at slip $s$ and $P_{mech}$ is obtained from `HP` ($\times 746$) or `kW` ($\times 1000$). The provided `slip` value is then overridden. If neither `HP` nor `kW` is given, the user-supplied `slip` is used as-is.
+
+Mechanical speed and ground-truth full-load torque are printed for comparison.
 
 Base conversions:
 
@@ -180,13 +196,17 @@ $$
 T_e(t)\approx T_{env,0}e^{-t/T_T}\cos\left(\omega_T t+\phi\right)
 $$
 
-where the default torque oscillation frequency is:
+where the torque oscillation frequency is configurable via `TORQUE_FREQUENCY_MODE`:
 
 $$
-\omega_T=(1-s)\omega_s
+\omega_T=
+\begin{cases}
+\omega_s, & \text{for } \text{TORQUE\_FREQUENCY\_MODE} = \text{"line"}\\[8pt]
+(1-s)\omega_s, & \text{for } \text{TORQUE\_FREQUENCY\_MODE} = \text{"rotor"}
+\end{cases}
 $$
 
-For low slip, $\omega_T\approx\omega_s$. Choose $\phi$ so that the plotted waveform starts near the pre-fault torque:
+For low slip, $\omega_T\approx\omega_s$ in either mode. Choose $\phi$ so that the plotted waveform starts near the pre-fault torque:
 
 $$
 \phi=\cos^{-1}\left(\operatorname{clip}\left(\frac{T_{nom}}{T_{env,0}},-1,1\right)\right)
@@ -214,7 +234,7 @@ The quick script includes an optional `DC_OFFSET_FACTOR` to add a conservative f
 
 The companion Python script:
 
-1. declares user-editable parameters at the top;
+1. reads motor and simulation parameters from `input.jsonc`;
 2. computes $T_{nom}$ from slip;
 3. computes $T_{r0}$, $T_{r,sc}$, and $T_{s,dc}$;
 4. estimates short-circuit current and torque envelope;
