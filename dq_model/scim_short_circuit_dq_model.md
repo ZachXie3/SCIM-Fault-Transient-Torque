@@ -22,6 +22,7 @@ Use per-phase, stator-referred parameters.
 | $J$ | `J` | total inertia referred to motor shaft | kg·m$^2$ |
 | $s$ | `slip` | pre-fault slip | per unit |
 | $V_{LL}$ | `V_LL` | pre-fault line-line RMS voltage | V |
+| &nbsp; | `CONNECTION` | stator winding connection | `"wye"` or `"delta"` |
 | $f$ | `f` | electrical frequency | Hz |
 | $p$ | `pole_pairs` | pole pairs | dimensionless |
 
@@ -30,6 +31,8 @@ Electrical angular frequency:
 $$
 \omega_s=2\pi f
 $$
+
+> **Note:** The script accepts **either** reactances ($X_s, X_r, X_m$) **or** inductances ($L_{\ell s}, L_{\ell r}, L_m$) in `input.jsonc`. When inductances are given, they are used directly; otherwise reactances are converted via $L = X / \omega_s$.
 
 Reactance-to-inductance conversion:
 
@@ -141,11 +144,17 @@ The script automatically chooses the sign convention so that the pre-fault torqu
 
 ## 4. Initial steady state from slip
 
-The dynamic model uses peak phase voltage:
+The dynamic model uses RMS phase voltage, which depends on the stator connection:
 
 $$
-V_{\phi,pk}=\sqrt{2}\frac{V_{LL}}{\sqrt{3}}
+V_{ph}=
+\begin{cases}
+\dfrac{V_{LL}}{\sqrt{3}}, & \text{for wye connection}\\[8pt]
+V_{LL}, & \text{for delta connection}
+\end{cases}
 $$
+
+The peak phase voltage $\sqrt{2}\,V_{ph}$ is used in the space-vector initialisation.
 
 With phasors in the synchronous steady-state frame, solve:
 

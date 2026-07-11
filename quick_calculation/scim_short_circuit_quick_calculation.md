@@ -22,6 +22,7 @@ Use per-phase, stator-referred equivalent-circuit quantities.
 | $s$ | `slip` | pre-fault slip | per unit |
 | $J$ | `J` | total inertia referred to motor shaft | kg·m$^2$, optional in quick method |
 | $V_{LL}$ | `V_LL` | pre-fault line-line RMS voltage | V |
+| &nbsp; | `CONNECTION` | stator winding connection | `"wye"` or `"delta"` |
 | $f$ | `f` | electrical frequency | Hz |
 | $p$ | `pole_pairs` | pole pairs | dimensionless |
 
@@ -32,8 +33,14 @@ $$
 $$
 
 $$
-V_{\phi}=\frac{V_{LL}}{\sqrt{3}}
+V_{ph}=
+\begin{cases}
+\dfrac{V_{LL}}{\sqrt{3}}, & \text{for wye connection}\\[8pt]
+V_{LL}, & \text{for delta connection}
+\end{cases}
 $$
+
+> **Note:** The script accepts **either** reactances ($X_s, X_r, X_m$) **or** inductances ($L_{\ell s}, L_{\ell r}, L_m$) in `input.jsonc`. When inductances are given, they are converted internally via $X = \omega_s L$. The quick-calculation formulas are all expressed in reactances.
 
 ---
 

@@ -1,0 +1,39 @@
+{
+    // Motor electrical parameters (per-phase, stator-referred)
+    "Rs": 0.060,       // Stator resistance, ohm/phase
+    "Rr": 0.055,       // Rotor resistance referred to stator, ohm/phase
+
+    // Uncomment ONE block below — EITHER reactances OR inductances:
+
+    // --- Reactances at frequency f ---
+    // "Xs": 0.340,       // Stator leakage reactance at f, ohm/phase
+    // "Xr": 0.330,       // Rotor leakage reactance referred to stator at f, ohm/phase
+    // "Xm": 10.600,      // Magnetizing reactance at f, ohm/phase
+
+    // --- Inductances (comment reactances above and uncomment these) ---
+    "Ls": 0.0005, // Stator leakage inductance, H
+    "Lr": 0.0010, // Rotor leakage inductance referred to stator, H
+    "Lm": 0.0100, // Magnetizing inductance, H
+
+    // Mechanical and operating conditions
+    "J": 1.0,          // Total inertia referred to motor shaft, kg*m^2
+    "slip": 0.010,     // Pre-fault slip, pu
+    "V_LL": 3810.0,     // Pre-fault line-line RMS voltage, V RMS
+    "CONNECTION": "wye", // Stator winding connection: "wye" or "delta"
+    "f": 60.0,         // Electrical frequency, Hz
+    "pole_pairs": 2,   // Number of pole pairs, dimensionless
+
+    // Simulation
+    "T_END": 0.200,    // Simulation end time, s
+    "N_POINTS": 5000,  // Number of time steps, dimensionless
+
+    // dq model options
+    "INITIAL_VOLTAGE_ANGLE_DEG": 0.0,  // Fault inception angle of phase-voltage space vector at t=0, deg
+    "USE_SPEED_DYNAMICS": false,       // Enable speed dynamics, boolean
+
+    // Quick calculation options
+    "DC_OFFSET_FACTOR": 0.0,     // First-cycle asymmetry sensitivity (0 = none, 1 = strong), pu
+    "FAULT_ANGLE_DEG": 0.0,      // Fault inception angle for dc sensitivity term, deg
+    "TORQUE_FREQUENCY_MODE": "line"  // Torque oscillation frequency: 'line' or 'rotor', enum
+}
+

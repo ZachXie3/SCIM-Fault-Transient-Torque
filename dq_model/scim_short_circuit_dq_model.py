@@ -6,33 +6,47 @@ Replace the USER PARAMETERS block with your motor data. Parameters are per-phase
 stator-referred, and reactances are at frequency f.
 """
 
+import json
+import re
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-# =========================
-# USER PARAMETERS
-# =========================
-Rs = 0.060       # ohm/phase, stator resistance
-Rr = 0.055       # ohm/phase, rotor resistance referred to stator
-Xs = 0.340       # ohm/phase, stator leakage reactance at f
-Xr = 0.330       # ohm/phase, rotor leakage reactance at f
-Xm = 10.600      # ohm/phase, magnetizing reactance at f
-J = 1.0          # kg*m^2, total inertia referred to motor shaft
-slip = 0.020     # pu pre-fault slip
-V_LL = 230.0     # V RMS line-line pre-fault voltage
-f = 60.0         # Hz
-pole_pairs = 3   # p
+input_path = Path(__file__).resolve().parent.parent / "input.jsonc"
+text = input_path.read_text(encoding="utf-8")
+text = re.sub(r"//.*", "", text)
+text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+cfg = json.loads(text)
 
-T_END = 0.200    # seconds
-N_POINTS = 5000
+Rs = cfg["Rs"]
+Rr = cfg["Rr"]
+J = cfg["J"]
+slip = cfg["slip"]
+V_LL = cfg["V_LL"]
+f = cfg["f"]
+pole_pairs = cfg["pole_pairs"]
 
-# Fault inception / point-on-wave angle of phase-voltage space vector at t=0.
-INITIAL_VOLTAGE_ANGLE_DEG = 0.0
+# Accept either reactances (Xs, Xr, Xm) or inductances (Ls, Lr, Lm)
+omega_s = 2.0 * np.pi * f
+if "Ls" in cfg and "Lr" in cfg and "Lm" in cfg:
+    Lls = cfg["Ls"]
+    Llr = cfg["Lr"]
+    Lm = cfg["Lm"]
+else:
+    Xs = cfg["Xs"]
+    Xr = cfg["Xr"]
+    Xm = cfg["Xm"]
+    Lls = Xs / omega_s
+    Llr = Xr / omega_s
+    Lm = Xm / omega_s
 
-# For first-cycle electrical torque, constant speed is normally used.
-# If enabled, load torque is held equal to pre-fault electromagnetic torque.
-USE_SPEED_DYNAMICS = False
+if min(Lls, Llr, Lm) <= 0:
+    raise ValueError("Ls, Lr, and Lm must be positive.")
+
+T_END = cfg["T_END"]
+N_POINTS = cfg["N_POINTS"]
+INITIAL_VOLTAGE_ANGLE_DEG = cfg["INITIAL_VOLTAGE_ANGLE_DEG"]
+USE_SPEED_DYNAMICS = cfg["USE_SPEED_DYNAMICS"]
 
 # =========================
 # HELPER FUNCTIONS
@@ -40,8 +54,8 @@ USE_SPEED_DYNAMICS = False
 def validate_inputs():
     if not (0.0 < slip < 1.0):
         raise ValueError("slip must be between 0 and 1 pu for motor operation.")
-    if min(Rs, Rr, Xs, Xr, Xm, V_LL, f, pole_pairs) <= 0:
-        raise ValueError("Rs, Rr, Xs, Xr, Xm, V_LL, f, and pole_pairs must be positive.")
+    if min(Rs, Rr, V_LL, f, pole_pairs) <= 0:
+        raise ValueError("Rs, Rr, V_LL, f, and pole_pairs must be positive.")
     if USE_SPEED_DYNAMICS and J <= 0:
         raise ValueError("J must be positive when speed dynamics are enabled.")
 
@@ -63,19 +77,18 @@ def torque_from_flux_current(psi_s, i_s, p):
 # =========================
 validate_inputs()
 
-omega_s = 2.0 * np.pi * f
-Lls = Xs / omega_s
-Llr = Xr / omega_s
-Lm = Xm / omega_s
 Ls = Lls + Lm
 Lr = Llr + Lm
 Delta = Ls * Lr - Lm ** 2
 if Delta <= 0:
     raise ValueError("Invalid inductance set: Delta = Ls*Lr - Lm^2 must be positive.")
 
-V_phi_pk = np.sqrt(2.0) * V_LL / np.sqrt(3.0)
+if cfg.get("CONNECTION", "wye").lower() == "delta":
+    V_ph = V_LL
+else:
+    V_ph = V_LL / np.sqrt(3.0)
 angle0 = np.deg2rad(INITIAL_VOLTAGE_ANGLE_DEG)
-Vs0 = V_phi_pk * np.exp(1j * angle0)
+Vs0 = np.sqrt(2.0) * V_ph * np.exp(1j * angle0)
 
 # Synchronous steady-state phasor equations on peak basis.
 A = np.array(
@@ -158,9 +171,9 @@ T_percent = 100.0 * T_fault / T_nom
 # =========================
 # OUTPUT
 # =========================
-outdir = Path(__file__).resolve().parent
-csv_path = outdir / "dq_scim_short_circuit_fixed.csv"
-png_path = outdir / "dq_scim_short_circuit_fixed.png"
+outdir = Path(__file__).resolve().parent.parent / "data"
+csv_path = outdir / "dq_scim_short_circuit.csv"
+png_path = outdir / "dq_scim_short_circuit.png"
 
 np.savetxt(
     csv_path,

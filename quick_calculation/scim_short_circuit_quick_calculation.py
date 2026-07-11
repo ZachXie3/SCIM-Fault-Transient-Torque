@@ -6,53 +6,64 @@ Replace the USER PARAMETERS block with your motor data. Parameters are per-phase
 stator-referred, and reactances are at frequency f.
 """
 
+import json
+import re
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-# =========================
-# USER PARAMETERS
-# =========================
-Rs = 0.006       # ohm/phase, stator resistance
-Rr = 0.020       # ohm/phase, rotor resistance referred to stator; do NOT divide by slip
-Xs = 0.340       # ohm/phase, stator leakage reactance at f
-Xr = 0.330       # ohm/phase, rotor leakage reactance at f
-Xm = 10.600      # ohm/phase, magnetizing reactance at f
-J = 1.0          # kg*m^2, not used in quick constant-speed estimate
-slip = 0.020     # pu pre-fault slip
-V_LL = 230.0     # V RMS line-line pre-fault voltage
-f = 60.0         # Hz
-pole_pairs = 3   # p
+input_path = Path(__file__).resolve().parent.parent / "input.jsonc"
+text = input_path.read_text(encoding="utf-8")
+text = re.sub(r"//.*", "", text)
+text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+cfg = json.loads(text)
 
-T_END = 0.200    # seconds
-N_POINTS = 5000
+Rs = cfg["Rs"]
+Rr = cfg["Rr"]
+J = cfg["J"]
+slip = cfg["slip"]
+V_LL = cfg["V_LL"]
+f = cfg["f"]
+pole_pairs = cfg["pole_pairs"]
 
-# Optional first-cycle asymmetry sensitivity term.
-# 0.0 = no extra dc/asymmetry term; 1.0 = strong first-cycle sensitivity term.
-DC_OFFSET_FACTOR = 0.0
-FAULT_ANGLE_DEG = 0.0
+# Accept either reactances (Xs, Xr, Xm) or inductances (Ls, Lr, Lm)
+omega_s = 2.0 * np.pi * f
+if "Ls" in cfg and "Lr" in cfg and "Lm" in cfg:
+    Xs = omega_s * cfg["Ls"]
+    Xr = omega_s * cfg["Lr"]
+    Xm = omega_s * cfg["Lm"]
+else:
+    Xs = cfg["Xs"]
+    Xr = cfg["Xr"]
+    Xm = cfg["Xm"]
 
-# Torque frequency mode: "rotor" uses (1-slip)*omega_s; "line" uses omega_s.
-TORQUE_FREQUENCY_MODE = "line"
+T_END = cfg["T_END"]
+N_POINTS = cfg["N_POINTS"]
+DC_OFFSET_FACTOR = cfg["DC_OFFSET_FACTOR"]
+FAULT_ANGLE_DEG = cfg["FAULT_ANGLE_DEG"]
+TORQUE_FREQUENCY_MODE = cfg["TORQUE_FREQUENCY_MODE"]
 
 # =========================
 # CALCULATION
 # =========================
 if not (0.0 < slip < 1.0):
     raise ValueError("slip must be between 0 and 1 pu for motor operation.")
-if min(Rs, Rr, Xs, Xr, Xm, V_LL, f, pole_pairs) <= 0:
-    raise ValueError("Rs, Rr, Xs, Xr, Xm, V_LL, f, and pole_pairs must be positive.")
+if min(Rs, Rr, V_LL, f, pole_pairs) <= 0:
+    raise ValueError("Rs, Rr, V_LL, f, and pole_pairs must be positive.")
 
 j = 1j
 omega_s = 2.0 * np.pi * f
-V_phi = V_LL / np.sqrt(3.0)  # RMS phase voltage
+if cfg.get("CONNECTION", "wye").lower() == "delta":
+    V_ph = V_LL
+else:
+    V_ph = V_LL / np.sqrt(3.0)
 
 # Initial steady-state equivalent circuit
 Zr = Rr / slip + j * Xr
 Zm = j * Xm
 Zp = (Zm * Zr) / (Zm + Zr)
-Is0 = V_phi / (Rs + j * Xs + Zp)
-Eag0 = V_phi - Is0 * (Rs + j * Xs)
+Is0 = V_ph / (Rs + j * Xs + Zp)
+Eag0 = V_ph - Is0 * (Rs + j * Xs)
 Ir0 = Eag0 / (Rr / slip + j * Xr)
 
 omega_syn_m = omega_s / pole_pairs
@@ -105,9 +116,9 @@ T_env_percent = 100.0 * T_env / T_base
 # =========================
 # OUTPUT
 # =========================
-outdir = Path(__file__).resolve().parent
-csv_path = outdir / "quick_scim_short_circuit_fixed.csv"
-png_path = outdir / "quick_scim_short_circuit_fixed.png"
+outdir = Path(__file__).resolve().parent.parent / "data"
+csv_path = outdir / "quick_scim_short_circuit.csv"
+png_path = outdir / "quick_scim_short_circuit.png"
 
 np.savetxt(
     csv_path,
