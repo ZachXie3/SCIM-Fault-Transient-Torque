@@ -1,35 +1,35 @@
-# The d–q Transient Model for SCIM Short-Circuit Torque Analysis
+# The d-q Transient Model for SCIM Short-Circuit Torque Analysis
 
 **A comprehensive technical reference covering theory, implementation, numerical methods, validation, and extensions.**
 
-> **Document scope:** This document describes every aspect of the d–q transient model as implemented in `scim_calc/dq.py`, the shared helper functions in `scim_calc/circuit.py`, the parameter pipeline in `scim_calc/config.py`, the post-processing in `scim_calc/compare.py`, and the supporting infrastructure in `run.py` and `scim_calc/sweep.py`. It is intended as both a tutorial for engineers new to the subject and a detailed reference for researchers and maintainers.
+> **Document scope:** This document describes every aspect of the d-q transient model as implemented in `scim_calc/dq.py`, the shared helper functions in `scim_calc/circuit.py`, the parameter pipeline in `scim_calc/config.py`, the post-processing in `scim_calc/compare.py`, and the supporting infrastructure in `run.py` and `scim_calc/sweep.py`. It is intended as both a tutorial for engineers new to the subject and a detailed reference for researchers and maintainers.
 
 ---
 
 ## Table of Contents
 
-**Part I — Foundations**
-1. [Three-Phase Systems and the d–q Transformation](#1-three-phase-systems-and-the-dq-transformation)
+**Part I - Foundations**
+1. [Three-Phase Systems and the d-q Transformation](#1-three-phase-systems-and-the-d-q-transformation)
    - 1.1 [The Three-Phase Induction Machine](#11-the-three-phase-induction-machine)
-   - 1.2 [The Clarke Transformation (abc → αβ)](#12-the-clarke-transformation-abc--αβ)
-   - 1.3 [The Park Transformation (αβ → dq)](#13-the-park-transformation-αβ--dq)
+   - 1.2 [The Clarke Transformation (abc -> alphabeta)](#12-the-clarke-transformation-abc-alphabeta)
+   - 1.3 [The Park Transformation (alphabeta -> dq)](#13-the-park-transformation-alphabeta-dq)
    - 1.4 [Amplitude-Invariant vs Power-Invariant Forms](#14-amplitude-invariant-vs-power-invariant-forms)
    - 1.5 [Complex Space-Vector Notation](#15-complex-space-vector-notation)
    - 1.6 [Why the Stationary Frame for This Application](#16-why-the-stationary-frame-for-this-application)
 2. [Machine Magnetic Structure and Flux Linkage](#2-machine-magnetic-structure-and-flux-linkage)
    - 2.1 [Self and Mutual Inductances of a Wound-Rotor Machine](#21-self-and-mutual-inductances-of-a-wound-rotor-machine)
-   - 2.2 [Effect of the d–q Transformation on Inductances](#22-effect-of-the-dq-transformation-on-inductances)
+   - 2.2 [Effect of the d-q Transformation on Inductances](#22-effect-of-the-d-q-transformation-on-inductances)
    - 2.3 [Leakage vs Magnetizing Inductance](#23-leakage-vs-magnetizing-inductance)
-   - 2.4 [The Flux–Current Matrix and Its Inverse](#24-the-fluxcurrent-matrix-and-its-inverse)
-   - 2.5 [The Leakage Determinant Δ](#25-the-leakage-determinant-δ)
+   - 2.4 [The Flux-Current Matrix and Its Inverse](#24-the-flux-current-matrix-and-its-inverse)
+   - 2.5 [The Leakage Determinant Delta](#25-the-leakage-determinant-delta)
    - 2.6 [Physical Interpretation of the Inverse](#26-physical-interpretation-of-the-inverse)
-3. [Electromagnetic Torque in d–q Form](#3-electromagnetic-torque-in-dq-form)
+3. [Electromagnetic Torque in d-q Form](#3-electromagnetic-torque-in-d-q-form)
    - 3.1 [Torque from Energy and Co-Energy](#31-torque-from-energy-and-co-energy)
-   - 3.2 [The d–q Torque Expression](#32-the-dq-torque-expression)
+   - 3.2 [The d-q Torque Expression](#32-the-d-q-torque-expression)
    - 3.3 [Equivalent Forms and Numerical Considerations](#33-equivalent-forms-and-numerical-considerations)
    - 3.4 [Sign Convention](#34-sign-convention)
 
-**Part II — The Differential Equations**
+**Part II - The Differential Equations**
 4. [The 5th-Order State-Space Model](#4-the-5th-order-state-space-model)
    - 4.1 [Stator Voltage Equation in the Stationary Frame](#41-stator-voltage-equation-in-the-stationary-frame)
    - 4.2 [Rotor Voltage Equation in the Stationary Frame](#42-rotor-voltage-equation-in-the-stationary-frame)
@@ -43,21 +43,21 @@
    - 5.3 [Time Constants and Natural Frequencies](#53-time-constants-and-natural-frequencies)
    - 5.4 [Stiffness Ratio and Its Implications](#54-stiffness-ratio-and-its-implications)
 
-**Part III — Initial Conditions**
+**Part III - Initial Conditions**
 6. [Pre-Fault Steady-State Solution](#6-pre-fault-steady-state-solution)
    - 6.1 [The Phasor Equations in the Stationary Frame](#61-the-phasor-equations-in-the-stationary-frame)
    - 6.2 [Relationship to the IEEE Equivalent Circuit](#62-relationship-to-the-ieee-equivalent-circuit)
-   - 6.3 [Numerical Solution of the 2×2 Complex System](#63-numerical-solution-of-the-2×2-complex-system)
+   - 6.3 [Numerical Solution of the 2x2 Complex System](#63-numerical-solution-of-the-2x2-complex-system)
    - 6.4 [Conditioning and Alternative Solution Methods](#64-conditioning-and-alternative-solution-methods)
    - 6.5 [Initial Flux Linkages](#65-initial-flux-linkages)
 7. [Slip Derivation from Nameplate Power](#7-slip-derivation-from-nameplate-power)
-   - 7.1 [The Torque–Slip Characteristic](#71-the-torqueslip-characteristic)
+   - 7.1 [The Torque-Slip Characteristic](#71-the-torque-slip-characteristic)
    - 7.2 [Multiple Operating Points](#72-multiple-operating-points)
    - 7.3 [Bisection Method: Description and Convergence Proof](#73-bisection-method-description-and-convergence-proof)
-   - 7.4 [Alternative: Newton–Raphson and Why It Is Not Used](#74-alternative-newtonraphson-and-why-it-is-not-used)
+   - 7.4 [Alternative: Newton-Raphson and Why It Is Not Used](#74-alternative-newton-raphson-and-why-it-is-not-used)
    - 7.5 [Widening the Search Interval](#75-widening-the-search-interval)
 
-**Part IV — The Short-Circuit Transient**
+**Part IV - The Short-Circuit Transient**
 8. [The Short-Circuit Condition](#8-the-short-circuit-condition)
    - 8.1 [What a Bolted Three-Phase Short Circuit Means](#81-what-a-bolted-three-phase-short-circuit-means)
    - 8.2 [The Fault as an Initial-Value Problem](#82-the-fault-as-an-initial-value-problem)
@@ -70,17 +70,17 @@
    - 9.4 [Decay of the DC Component](#94-decay-of-the-dc-component)
    - 9.5 [Effect on the Torque Waveform](#95-effect-on-the-torque-waveform)
 10. [The Fault Inception Angle](#10-the-fault-inception-angle)
-    - 10.1 [Physical Meaning of θ₀](#101-physical-meaning-of-θ₀)
+    - 10.1 [Physical Meaning of theta0](#101-physical-meaning-of-theta0)
     - 10.2 [Effect on Initial Conditions](#102-effect-on-initial-conditions)
     - 10.3 [Effect on the Transient Waveform](#103-effect-on-the-transient-waveform)
-    - 10.4 [Periodicity: Why 180°](#104-periodicity-why-180)
+    - 10.4 [Periodicity: Why 180](#104-periodicity-why-180)
     - 10.5 [Why Peak |T| Is Nearly Angle-Invariant for Balanced Faults](#105-why-peak-t-is-nearly-angle-invariant-for-balanced-faults)
     - 10.6 [Asymmetry Mechanism](#106-asymmetry-mechanism)
     - 10.7 [Angle Sweep Implementation](#107-angle-sweep-implementation)
 
-**Part V — Numerical Integration**
-11. [The Runge–Kutta 4th-Order Method (RK4)](#11-the-rungekutta-4th-order-method-rk4)
-    - 11.1 [The General Runge–Kutta Framework](#111-the-general-rungekutta-framework)
+**Part V - Numerical Integration**
+11. [The Runge-Kutta 4th-Order Method (RK4)](#11-the-runge-kutta-4th-order-method-rk4)
+    - 11.1 [The General Runge-Kutta Framework](#111-the-general-runge-kutta-framework)
     - 11.2 [The RK4 Butcher Tableau](#112-the-rk4-butcher-tableau)
     - 11.3 [Local Truncation Error](#113-local-truncation-error)
     - 11.4 [Global Error and Convergence Order](#114-global-error-and-convergence-order)
@@ -89,26 +89,26 @@
     - 11.7 [Implementation Structure in dq.py](#117-implementation-structure-in-dqpy)
 12. [Alternative Numerical Methods](#12-alternative-numerical-methods)
     - 12.1 [Forward Euler: The Simplest](#121-forward-euler-the-simplest)
-    - 12.2 [Trapezoidal Integration (Crank–Nicolson)](#122-trapezoidal-integration-cranknicolson)
-    - 12.3 [Runge–Kutta 45 (Adaptive)](#123-rungekutta-45-adaptive)
+    - 12.2 [Trapezoidal Integration (Crank-Nicolson)](#122-trapezoidal-integration-crank-nicolson)
+    - 12.3 [Runge-Kutta 45 (Adaptive)](#123-runge-kutta-45-adaptive)
     - 12.4 [Backward Differentiation Formulas (BDF/Gear)](#124-backward-differentiation-formulas-bdfgear)
     - 12.5 [Comparison Summary](#125-comparison-summary)
     - 12.6 [Why RK4 Was Chosen](#126-why-rk4-was-chosen)
 
-**Part VI — Output and Post-Processing**
+**Part VI - Output and Post-Processing**
 13. [Torque Computation at Each Step](#13-torque-computation-at-each-step)
-    - 13.1 [Flux–Current Inversion](#131-fluxcurrent-inversion)
+    - 13.1 [Flux-Current Inversion](#131-flux-current-inversion)
     - 13.2 [Torque from Space Vectors](#132-torque-from-space-vectors)
     - 13.3 [Sign Convention and Normalization](#133-sign-convention-and-normalization)
     - 13.4 [Numerical Considerations](#134-numerical-considerations)
 14. [Saved Outputs](#14-saved-outputs)
-    - 14.1 [CSV Format for the d–q Model](#141-csv-format-for-the-dq-model)
+    - 14.1 [CSV Format for the d-q Model](#141-csv-format-for-the-d-q-model)
     - 14.2 [Comparison with the Quick Calculation](#142-comparison-with-the-quick-calculation)
     - 14.3 [Comparison Metrics](#143-comparison-metrics)
     - 14.4 [Overlay Plot](#144-overlay-plot)
 
-**Part VII — Validation and Analysis**
-15. [Comparison of Methods: Quick vs d–q](#15-comparison-of-methods-quick-vs-dq)
+**Part VII - Validation and Analysis**
+15. [Comparison of Methods: Quick vs d-q](#15-comparison-of-methods-quick-vs-d-q)
     - 15.1 [Theoretical Differences](#151-theoretical-differences)
     - 15.2 [Quantified Differences for the Test Motor](#152-quantified-differences-for-the-test-motor)
     - 15.3 [Component-by-Component Spectral Analysis](#153-component-by-component-spectral-analysis)
@@ -119,9 +119,9 @@
     - 16.3 [Leakage Reactances Xs, Xr](#163-leakage-reactances-xs-xr)
     - 16.4 [Magnetizing Reactance Xm](#164-magnetizing-reactance-xm)
     - 16.5 [Inertia J](#165-inertia-j)
-    - 16.6 [Fault Inception Angle θ₀](#166-fault-inception-angle-θ₀)
+    - 16.6 [Fault Inception Angle theta0](#166-fault-inception-angle-theta0)
 
-**Part VIII — Extensions and Alternatives**
+**Part VIII - Extensions and Alternatives**
 17. [Assumptions and Limitations](#17-assumptions-and-limitations)
     - 17.1 [Linear Magnetics (No Saturation)](#171-linear-magnetics-no-saturation)
     - 17.2 [Balanced Fault Only](#172-balanced-fault-only)
@@ -139,18 +139,18 @@
     - 18.6 [Adaptive Time-Stepping](#186-adaptive-time-stepping)
     - 18.7 [Parallel Angle Sweep](#187-parallel-angle-sweep)
 
-**Part IX — Appendices**
+**Part IX - Appendices**
 19. [Source Code Cross-Reference](#19-source-code-cross-reference)
 20. [Glossary of Symbols](#20-glossary-of-symbols)
 21. [References](#21-references)
 
 ---
 
-# Part I — Foundations
+# Part I - Foundations
 
 ---
 
-## 1. Three-Phase Systems and the d–q Transformation
+## 1. Three-Phase Systems and the d-q Transformation
 
 ### 1.1 The Three-Phase Induction Machine
 
@@ -171,9 +171,9 @@ $$
 
 The flux linkages $\psi_{as}, \psi_{bs}, \psi_{cs}$ are functions of all six currents (three stator, three rotor) and the rotor position $\theta_r$. This makes the $abc$ frame model complicated: the inductance matrix contains terms like $\cos(\theta_r)$, $\cos(\theta_r + 120^\circ)$, etc., that vary with time as the rotor rotates.
 
-The d–q transformation eliminates this time variation by projecting the $abc$ quantities onto a set of orthogonal axes.
+The d-q transformation eliminates this time variation by projecting the $abc$ quantities onto a set of orthogonal axes.
 
-### 1.2 The Clarke Transformation (abc → αβ)
+### 1.2 The Clarke Transformation (abc -> alphabeta)
 
 The **Clarke transformation** (also called the $abc \to \alpha\beta 0$ transformation) converts three-phase quantities into an orthogonal two-axis system plus a zero-sequence component. For a set of three-phase voltages $v_a, v_b, v_c$:
 
@@ -209,9 +209,9 @@ $$
 
 where $V$ is the **peak** phase voltage magnitude.
 
-**Why this matters:** The Clarke transformation reduces the problem from three coupled equations to two orthogonal ones, but the resulting $\alpha\beta$ quantities are still sinusoidal at the electrical frequency $\omega_s$. The inductance matrix in the $\alpha\beta$ frame is constant (not rotor-position-dependent) — this is the key simplification.
+**Why this matters:** The Clarke transformation reduces the problem from three coupled equations to two orthogonal ones, but the resulting $\alpha\beta$ quantities are still sinusoidal at the electrical frequency $\omega_s$. The inductance matrix in the $\alpha\beta$ frame is constant (not rotor-position-dependent) - this is the key simplification.
 
-### 1.3 The Park Transformation (αβ → dq)
+### 1.3 The Park Transformation (alphabeta -> dq)
 
 The **Park transformation** rotates the $\alpha\beta$ axes to follow the rotor (or the synchronously rotating field). If we define a reference frame rotating at $\omega$:
 
@@ -226,7 +226,7 @@ $$
 \quad\text{where}\quad \theta = \int_0^t \omega(\tau)\,d\tau + \theta_0
 $$
 
-In the **synchronous reference frame**, $\omega = \omega_s$, so the $dq$ quantities are constant in steady state. In the **stationary reference frame** (used in this project), $\omega = 0$ and $\theta = 0$, so $f_d = f_\alpha$ and $f_q = f_\beta$. The stationary-frame d–q transformation is therefore equivalent to the Clarke transformation.
+In the **synchronous reference frame**, $\omega = \omega_s$, so the $dq$ quantities are constant in steady state. In the **stationary reference frame** (used in this project), $\omega = 0$ and $\theta = 0$, so $f_d = f_\alpha$ and $f_q = f_\beta$. The stationary-frame d-q transformation is therefore equivalent to the Clarke transformation.
 
 ### 1.4 Amplitude-Invariant vs Power-Invariant Forms
 
@@ -237,7 +237,7 @@ The transformation scaling factor affects the magnitude of the resulting quantit
 | **Amplitude-invariant** | $2/3$ | Same as peak phase value | $P_{dq} = \frac{3}{2}(v_d i_d + v_q i_q)$ | Yes |
 | Power-invariant | $\sqrt{2/3}$ | $\sqrt{3/2} \times$ peak phase | $P_{dq} = v_d i_d + v_q i_q$ | No |
 
-The amplitude-invariant form is used throughout this project because it preserves the intuitive relationship: a balanced three-phase sinusoidal set with peak amplitude $V$ maps to a d–q vector of magnitude $V$. The factor $3/2$ then appears explicitly in the torque equation (see [Section 3.2](#32-the-dq-torque-expression)).
+The amplitude-invariant form is used throughout this project because it preserves the intuitive relationship: a balanced three-phase sinusoidal set with peak amplitude $V$ maps to a d-q vector of magnitude $V$. The factor $3/2$ then appears explicitly in the torque equation (see [Section 3.2](#32-the-d-q-torque-expression)).
 
 ### 1.5 Complex Space-Vector Notation
 
@@ -267,15 +267,15 @@ This project uses the **stationary reference frame** for the following reasons:
 
 2. **The stator equation requires no frame-rotation term.** In the stationary frame, $\frac{d\psi_s}{dt} = v_s - R_s i_s$ without any additional $j\omega\psi$ term on the stator side. The rotation-induced voltage appears only in the rotor equation ($j\omega_{re}\psi_r$), which is physically correct.
 
-3. **Initial conditions are straightforward.** The pre-fault steady state is solved directly in the stationary frame from the 2×2 complex system with the applied voltage $V_{s0} = \sqrt{2}V_{ph}\,e^{j\theta_0}$.
+3. **Initial conditions are straightforward.** The pre-fault steady state is solved directly in the stationary frame from the 2x2 complex system with the applied voltage $V_{s0} = \sqrt{2}V_{ph}\,e^{j\theta_0}$.
 
-4. **The alternative — synchronous frame —** would require transforming the initial conditions and fault condition through the Park transformation angle, adding complexity without numerical benefit for this problem.
+4. **The alternative - synchronous frame -** would require transforming the initial conditions and fault condition through the Park transformation angle, adding complexity without numerical benefit for this problem.
 
 **Implementation:** The stationary-frame space-vector model is implemented in `scim_calc/dq.py`, with the state vector representing the real and imaginary parts of $\psi_s$ and $\psi_r$ directly.
 
-### 1.7 Terminology Clarification: $\alpha\beta$ vs $dq$
+### 1.7 Terminology Clarification: alpha-beta vs dq
 
-Throughout this document and in the code, the model is referred to as a **"d–q model"**. Strictly speaking, since $\omega = 0$ (stationary frame), the transformation used is the **Clarke transformation** ($abc \to \alpha\beta$), not the **Park transformation** ($\alpha\beta \to dq$). The correct technical name would be an **$\alpha\beta$ model** or a **Clarke-frame model**.
+Throughout this document and in the code, the model is referred to as a **"d-q model"**. Strictly speaking, since $\omega = 0$ (stationary frame), the transformation used is the **Clarke transformation** ($abc \to \alpha\beta$), not the **Park transformation** ($\alpha\beta \to dq$). The correct technical name would be an **$\alpha\beta$ model** or a **Clarke-frame model**.
 
 However, the following conventions are observed in the literature and in this project:
 
@@ -284,11 +284,11 @@ However, the following conventions are observed in the literature and in this pr
 
 The decision to use the $dq$ notation despite the stationary frame is a deliberate choice based on:
 
-1. **Industry convention:** The term "d–q model" is the standard name in the electric machinery literature (Krause, Lipo, Boldea) for any two-axis state-space machine model, regardless of whether the frame is stationary or rotating. Specifying "stationary reference frame d–q model" disambiguates.
-2. **Code readability:** Variable names like `psi_sd`, `psi_sq` (or just using the complex space vector) are more recognizable to engineers familiar with d–q theory than $\alpha\beta$ subscripts.
-3. **Extensibility:** The same model structure can be extended to the synchronous frame (for grid-connected applications) or the rotor frame (for field-oriented control) by adding a non-zero rotation speed — the $dq$ framework accommodates this naturally.
+1. **Industry convention:** The term "d-q model" is the standard name in the electric machinery literature (Krause, Lipo, Boldea) for any two-axis state-space machine model, regardless of whether the frame is stationary or rotating. Specifying "stationary reference frame d-q model" disambiguates.
+2. **Code readability:** Variable names like `psi_sd`, `psi_sq` (or just using the complex space vector) are more recognizable to engineers familiar with d-q theory than $\alpha\beta$ subscripts.
+3. **Extensibility:** The same model structure can be extended to the synchronous frame (for grid-connected applications) or the rotor frame (for field-oriented control) by adding a non-zero rotation speed - the $dq$ framework accommodates this naturally.
 
-> **Key point:** Despite the $dq$ naming, this project implements an $\alpha\beta$ model with $\omega = 0$. The differential equations have no Park rotation terms on the stator side, confirming this. When the literature is referenced, the model described here corresponds to the **stationary-reference-frame d–q model** or equivalently the **$\alpha\beta$ model**.
+> **Key point:** Despite the $dq$ naming, this project implements an $\alpha\beta$ model with $\omega = 0$. The differential equations have no Park rotation terms on the stator side, confirming this. When the literature is referenced, the model described here corresponds to the **stationary-reference-frame d-q model** or equivalently the **$\alpha\beta$ model**.
 
 ---
 
@@ -341,7 +341,7 @@ L_s & 0 \\
 \end{bmatrix}
 $$
 
-where $L_s = L_{\ell s} + L_m$ is the **stator self-inductance per axis** in the $\alpha\beta$ frame. The zero off-diagonals confirm that the $\alpha$ and $\beta$ axes are magnetically decoupled — a key advantage of the transformed model.
+where $L_s = L_{\ell s} + L_m$ is the **stator self-inductance per axis** in the $\alpha\beta$ frame. The zero off-diagonals confirm that the $\alpha$ and $\beta$ axes are magnetically decoupled - a key advantage of the transformed model.
 
 The stator-to-rotor mutual inductance matrix in the $\alpha\beta$ frame becomes:
 
@@ -353,9 +353,9 @@ $$
 \end{bmatrix}
 $$
 
-The crucial observation: **the diagonal elements $L_s$, $L_r$ and the stator–stator mutual terms are constant** (they depend only on the fixed geometry), while the **stator-to-rotor mutual inductances vary with rotor position $\theta_r$**. This position dependence is expressed through the rotation matrix above and ultimately manifests as the $j\omega_{re}\psi_r$ speed-voltage term in the rotor equation (see [Section 4.2](#42-rotor-voltage-equation-in-the-stationary-frame)).
+The crucial observation: **the diagonal elements $L_s$, $L_r$ and the stator-stator mutual terms are constant** (they depend only on the fixed geometry), while the **stator-to-rotor mutual inductances vary with rotor position $\theta_r$**. This position dependence is expressed through the rotation matrix above and ultimately manifests as the $j\omega_{re}\psi_r$ speed-voltage term in the rotor equation (see [Section 4.2](#42-rotor-voltage-equation-in-the-stationary-frame)).
 
-### 2.2 Effect of the d–q Transformation on Inductances
+### 2.2 Effect of the d-q Transformation on Inductances
 
 When the Clarke transformation (amplitude-invariant, $abc \to \alpha\beta$) is applied, the inductances become:
 
@@ -386,7 +386,7 @@ $$
 
 In the stationary frame (which is what we use), the inductance matrix is still $\theta_r$-dependent because the stator and rotor axes are physically misaligned. However, when the rotor equation is written in rotor coordinates, the transformation back to the stationary frame produces the $j\omega_{re}\psi_r$ term in [Equation 4.2](#42-rotor-voltage-equation-in-the-stationary-frame).
 
-**The key insight:** The d–q transformation does not make all inductances constant — it makes them constant **in a given reference frame**. The choice of the stationary frame means the rotor quantities rotate relative to the stator, and this rotation appears as the $j\omega_{re}\psi_r$ speed-voltage term.
+**The key insight:** The d-q transformation does not make all inductances constant - it makes them constant **in a given reference frame**. The choice of the stationary frame means the rotor quantities rotate relative to the stator, and this rotation appears as the $j\omega_{re}\psi_r$ speed-voltage term.
 
 ### 2.3 Leakage vs Magnetizing Inductance
 
@@ -424,9 +424,9 @@ $$
 
 The leakage coefficient $\sigma \approx 0.043$, indicating a loose-coupled machine (typical for a general-purpose induction motor).
 
-### 2.4 The Flux–Current Matrix and Its Inverse
+### 2.4 The Flux-Current Matrix and Its Inverse
 
-In the stationary d–q frame, the flux–current relationship is:
+In the stationary d-q frame, the flux-current relationship is:
 
 $$
 \begin{bmatrix} \psi_s \\ \psi_r \end{bmatrix}
@@ -440,7 +440,7 @@ $$
 
 where $\psi_s$, $\psi_r$, $i_s$, $i_r$ are complex numbers (combining $d$ and $q$ components).
 
-To recover currents from fluxes (as required at every time step of the d–q simulation), we invert this 2×2 system:
+To recover currents from fluxes (as required at every time step of the d-q simulation), we invert this 2x2 system:
 
 $$
 \begin{bmatrix} i_s \\ i_r \end{bmatrix}
@@ -455,9 +455,9 @@ $$
 
 where $\Delta = L_s L_r - L_m^2$ is the **leakage determinant**.
 
-**Implementation:** `scim_calc/circuit.py:currents_from_flux()`, lines 14–33. Note that the determinant $\Delta$ is pre-computed once in `config.py:normalize_params()` line 63 and stored in the parameters dict, avoiding repeated computation.
+**Implementation:** `scim_calc/circuit.py:currents_from_flux()`, lines 14-33. Note that the determinant $\Delta$ is pre-computed once in `config.py:normalize_params()` line 63 and stored in the parameters dict, avoiding repeated computation.
 
-### 2.5 The Leakage Determinant Δ
+### 2.5 The Leakage Determinant Delta
 
 The determinant $\Delta$ has physical significance:
 
@@ -473,7 +473,7 @@ $$
 
 For the test motor, $\Delta \approx 5.46 \times 10^{-7}\ \text{H}^2$.
 
-If $L_m^2 = L_s L_r$ (perfect magnetic coupling, no leakage), then $\Delta = 0$ and the inverse does not exist. This is physically impossible — all real machines have leakage flux. As $\Delta \to 0$, the currents become increasingly sensitive to small changes in flux (ill-conditioning), but for typical induction machines with $\sigma > 0.02$, this is not a practical concern.
+If $L_m^2 = L_s L_r$ (perfect magnetic coupling, no leakage), then $\Delta = 0$ and the inverse does not exist. This is physically impossible - all real machines have leakage flux. As $\Delta \to 0$, the currents become increasingly sensitive to small changes in flux (ill-conditioning), but for typical induction machines with $\sigma > 0.02$, this is not a practical concern.
 
 ### 2.6 Physical Interpretation of the Inverse
 
@@ -495,7 +495,7 @@ The negative sign on the mutual term reflects Lenz's law: the rotor current oppo
 
 ---
 
-## 3. Electromagnetic Torque in d–q Form
+## 3. Electromagnetic Torque in d-q Form
 
 ### 3.1 Torque from Energy and Co-Energy
 
@@ -511,11 +511,11 @@ $$
 W_c = \frac{1}{2} \mathbf{i}^T \mathbf{L}(\theta_r) \mathbf{i}
 $$
 
-Evaluating the derivative with the 2×2 d–q inductance matrix yields the torque expression.
+Evaluating the derivative with the 2x2 d-q inductance matrix yields the torque expression.
 
-### 3.2 The d–q Torque Expression
+### 3.2 The d-q Torque Expression
 
-For the amplitude-invariant d–q transformation, the torque is:
+For the amplitude-invariant d-q transformation, the torque is:
 
 $$
 T_e = \frac{3}{2} p \left(\psi_{ds} i_{qs} - \psi_{qs} i_{ds}\right)
@@ -549,12 +549,12 @@ Several mathematically equivalent forms exist:
 
 | Form | Expression | Used in | Numerical note |
 |---|---|---|---|
-| Flux × current | $-\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\}$ | This project | Best — only needs $\psi_s$ and $i_s$ |
-| Current × inductance | $\frac{3}{2}p\,L_m\,\operatorname{Im}\{i_s i_r^*\}$ | Alternative | Needs both $i_s$ and $i_r$ |
-| Rotor flux × current | $-\frac{3}{2}p\,\frac{L_m}{L_r}\,\operatorname{Im}\{\psi_r i_s^*\}$ | Rotor-flux-oriented control | Needs flux estimation |
+| Flux x current | $-\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\}$ | This project | Best - only needs $\psi_s$ and $i_s$ |
+| Current x inductance | $\frac{3}{2}p\,L_m\,\operatorname{Im}\{i_s i_r^*\}$ | Alternative | Needs both $i_s$ and $i_r$ |
+| Rotor flux x current | $-\frac{3}{2}p\,\frac{L_m}{L_r}\,\operatorname{Im}\{\psi_r i_s^*\}$ | Rotor-flux-oriented control | Needs flux estimation |
 | Power balance | $T_e = \frac{P_{ag} - P_{cu,r}}{\omega_{re}}$ | Analytical | Not for real-time |
 
-The chosen form (flux × current) is preferred because:
+The chosen form (flux x current) is preferred because:
 - It requires only $\psi_s$ (from the state vector) and $i_s$ (recovered via the inverse inductance matrix).
 - It avoids explicit computation of the rotor current $i_r$ (though $i_r$ is computed anyway in the ODE right-hand side).
 - It is numerically well-conditioned for typical operating ranges.
@@ -577,7 +577,7 @@ This means the output torque $T_{fault}$:
 
 ---
 
-# Part II — The Differential Equations
+# Part II - The Differential Equations
 
 ---
 
@@ -667,7 +667,7 @@ When speed dynamics are enabled:
 - $T_L$ is set equal to the pre-fault electromagnetic torque $T_{nom}$ (constant load).
 - The speed evolves according to the net accelerating torque.
 
-**Implementation:** `scim_calc/dq.py`, lines 84–88:
+**Implementation:** `scim_calc/dq.py`, lines 84-88:
 ```python
 dom = 0.0
 if use_speed_dynamics:
@@ -701,7 +701,7 @@ This is a system of **three complex differential equations** (or **five real dif
 
 ### 4.5 The Complete System in Real Form
 
-Substituting the flux–current inversion and expanding into real components gives the explicit 5th-order system:
+Substituting the flux-current inversion and expanding into real components gives the explicit 5th-order system:
 
 $$
 \frac{d}{dt}
@@ -725,7 +725,7 @@ $$
 \end{bmatrix}
 $$
 
-This is a **nonlinear** system because the matrix elements in rows 3–4 depend on $\omega_m$ (through $p\omega_m$) and the mechanical equation (row 5) depends on the flux products. However, when $\omega_m$ is held constant (speed dynamics disabled), the system simplifies to a **linear time-invariant (LTI)** 4th-order system in the flux states only.
+This is a **nonlinear** system because the matrix elements in rows 3-4 depend on $\omega_m$ (through $p\omega_m$) and the mechanical equation (row 5) depends on the flux products. However, when $\omega_m$ is held constant (speed dynamics disabled), the system simplifies to a **linear time-invariant (LTI)** 4th-order system in the flux states only.
 
 ### 4.6 State Vector and Implementation
 
@@ -740,7 +740,7 @@ The ODE right-hand side is evaluated by the `rhs()` function, which:
 2. Recovers $i_s$, $i_r$ via `currents_from_flux()`.
 3. Computes $d\psi_s/dt$, $d\psi_r/dt$, and (optionally) $d\omega_m/dt$.
 
-**Implementation:** `scim_calc/dq.py`, lines 72–89.
+**Implementation:** `scim_calc/dq.py`, lines 72-89.
 
 ---
 
@@ -831,7 +831,7 @@ A system with $S < 100$ is generally considered **non-stiff** and can be efficie
 
 ---
 
-# Part III — Initial Conditions
+# Part III - Initial Conditions
 
 ---
 
@@ -857,7 +857,7 @@ $$
 V_{s0} = \sqrt{2} \cdot V_{ph} \cdot e^{j\theta_0}
 $$
 
-The $\sqrt{2}$ converts RMS to peak (since the space vectors in this amplitude-invariant convention represent peak quantities). $\theta_0$ is the fault inception angle — the angle of the $a$-phase voltage at $t = 0$.
+The $\sqrt{2}$ converts RMS to peak (since the space vectors in this amplitude-invariant convention represent peak quantities). $\theta_0$ is the fault inception angle - the angle of the $a$-phase voltage at $t = 0$.
 
 **Derivation of the matrix elements:**
 
@@ -866,7 +866,7 @@ The $\sqrt{2}$ converts RMS to peak (since the space vectors in this amplitude-i
 - **Bottom-left ($j s \omega_s L_m$):** The voltage induced in the rotor by the stator current $I_{s0}$ through the mutual inductance $L_m$ at slip frequency $s\omega_s$. This is the frequency seen by the rotor (the stator field rotates at $\omega_s$, the rotor at $\omega_{re} = (1-s)\omega_s$, so the relative speed is $s\omega_s$).
 - **Bottom-right ($R_r + j s \omega_s L_r$):** The rotor impedance at slip frequency.
 
-**Implementation:** `scim_calc/circuit.py:solve_prefault()`, lines 47–95. The matrix is constructed at lines 72–78 and solved with `np.linalg.solve` at line 80.
+**Implementation:** `scim_calc/circuit.py:solve_prefault()`, lines 47-95. The matrix is constructed at lines 72-78 and solved with `np.linalg.solve` at line 80.
 
 ### 6.2 Relationship to the IEEE Equivalent Circuit
 
@@ -876,17 +876,17 @@ $$
 I_s = \frac{V_{ph}}{R_s + jX_s + \frac{jX_m \cdot (R_r/s + jX_r)}{jX_m + R_r/s + jX_r}}
 $$
 
-The d–q phasor equations in [6.1] are the **same physical model**, written in inductance form with the slip frequency explicitly separating the stator and rotor equations. The two forms are related by:
+The d-q phasor equations in [6.1] are the **same physical model**, written in inductance form with the slip frequency explicitly separating the stator and rotor equations. The two forms are related by:
 
-- The IEEE circuit uses reactances $X = \omega L$, while the d–q equations use inductances $L$.
-- The IEEE circuit solves for RMS currents, while the d–q equations solve for peak currents (the $\sqrt{2}$ factor in $V_{s0}$).
-- The IEEE circuit is a scalar equation (per-phase), while the d–q equation is a 2×2 system that maintains the phase relationship between stator and rotor quantities.
+- The IEEE circuit uses reactances $X = \omega L$, while the d-q equations use inductances $L$.
+- The IEEE circuit solves for RMS currents, while the d-q equations solve for peak currents (the $\sqrt{2}$ factor in $V_{s0}$).
+- The IEEE circuit is a scalar equation (per-phase), while the d-q equation is a 2x2 system that maintains the phase relationship between stator and rotor quantities.
 
-### 6.3 Numerical Solution of the 2×2 Complex System
+### 6.3 Numerical Solution of the 2x2 Complex System
 
-The system is solved using `numpy.linalg.solve()`, which uses LU decomposition with partial pivoting. For a 2×2 system, this is trivial and numerically robust.
+The system is solved using `numpy.linalg.solve()`, which uses LU decomposition with partial pivoting. For a 2x2 system, this is trivial and numerically robust.
 
-The condition number $\kappa$ of the 2×2 matrix gives an indication of numerical stability:
+The condition number $\kappa$ of the 2x2 matrix gives an indication of numerical stability:
 
 $$
 \kappa = \|\mathbf{A}\| \cdot \|\mathbf{A}^{-1}\|
@@ -898,12 +898,12 @@ For the test motor, $\kappa \approx 10^3$ (moderate). This means solving the sys
 
 | Method | Pros | Cons | Used? |
 |---|---|---|---|
-| `np.linalg.solve` (LU) | Robust, accurate | None for 2×2 | **Yes** |
+| `np.linalg.solve` (LU) | Robust, accurate | None for 2x2 | **Yes** |
 | Cramer's rule | Simple formula | Poor for large systems | Possible but unnecessary |
 | Closed-form inverse | Fast, explicit | Must handle degenerate case | Possible but unnecessary |
 | Iterative (Gauss-Seidel) | Low memory | Slower, convergence issues | No |
 
-For a 2×2 system, any direct method would work. `np.linalg.solve` is chosen because it is the standard, tested, and most readable approach.
+For a 2x2 system, any direct method would work. `np.linalg.solve` is chosen because it is the standard, tested, and most readable approach.
 
 ### 6.5 Initial Flux Linkages
 
@@ -929,7 +929,7 @@ This is the **flux continuity** condition (Faraday's law requires that flux link
 
 ## 7. Slip Derivation from Nameplate Power
 
-### 7.1 The Torque–Slip Characteristic
+### 7.1 The Torque-Slip Characteristic
 
 The electromagnetic torque developed by an induction motor as a function of slip can be derived from the equivalent circuit:
 
@@ -946,9 +946,9 @@ $$
 
 where $I_r(s)$ is computed from the full equivalent circuit.
 
-The torque–slip curve has:
+The torque-slip curve has:
 - $T_e = 0$ at $s = 0$ (synchronous speed, no rotor current).
-- A peak at $s = s_{max}$ (pullout or breakdown slip), typically $0.1$–$0.3$ for NEMA design B motors.
+- A peak at $s = s_{max}$ (pullout or breakdown slip), typically $0.1$-$0.3$ for NEMA design B motors.
 - $T_e \propto 1/s$ for small $s$ (the approximately linear region of normal operation).
 - Decreasing torque for $s > s_{max}$.
 
@@ -989,28 +989,28 @@ Since $f$ is continuous and $f(a) \cdot f(b) < 0$ at the start, the intermediate
 
 **Convergence rate:** Linear ($O(2^{-n})$), requiring $\log_2((b-a)/\epsilon)$ iterations. For $\epsilon = 10^{-10}$ and initial interval $[10^{-4}, 0.1]$, this is $\log_2(0.1 / 10^{-10}) \approx 30$ iterations. The code uses 100 as a safe maximum.
 
-### 7.4 Alternative: Newton–Raphson and Why It Is Not Used
+### 7.4 Alternative: Newton-Raphson and Why It Is Not Used
 
-The Newton–Raphson method offers quadratic convergence:
+The Newton-Raphson method offers quadratic convergence:
 
 $$
 s_{n+1} = s_n - \frac{f(s_n)}{f'(s_n)}
 $$
 
 However:
-1. **It requires $f'(s)$** — the derivative of the torque with respect to slip. This can be derived analytically but adds code complexity.
-2. **It may diverge** if the initial guess is far from the root, especially near the peak of the torque–slip curve where $f'(s)$ changes sign.
+1. **It requires $f'(s)$** - the derivative of the torque with respect to slip. This can be derived analytically but adds code complexity.
+2. **It may diverge** if the initial guess is far from the root, especially near the peak of the torque-slip curve where $f'(s)$ changes sign.
 3. **It may converge to the wrong root** (e.g., the plugging or generating solution).
 
 Bisection is preferred because:
 - It is **guaranteed to converge** as long as the root is bracketed.
 - It requires only function evaluations (no derivatives).
 - It always converges to the root within the bracketed interval (the motoring solution).
-- The slower convergence rate is irrelevant for a scalar function: 30 iterations vs 5–6 iterations is negligible in Python.
+- The slower convergence rate is irrelevant for a scalar function: 30 iterations vs 5-6 iterations is negligible in Python.
 
 ### 7.5 Widening the Search Interval
 
-The initial search interval $[10^{-4}, 0.1]$ is chosen based on typical full-load slips for NEMA design B motors ($s_{FL} \approx 0.005$–$0.05$). However, some motors (especially small or high-efficiency designs) may have different slip ranges.
+The initial search interval $[10^{-4}, 0.1]$ is chosen based on typical full-load slips for NEMA design B motors ($s_{FL} \approx 0.005$-$0.05$). However, some motors (especially small or high-efficiency designs) may have different slip ranges.
 
 If $f(a) \cdot f(b) > 0$ (no sign change, thus no guarantee of a root), the code widens the upper bound:
 
@@ -1024,7 +1024,7 @@ The limit $s_{high} \leq 0.8$ prevents the search from entering the plugging reg
 
 ---
 
-# Part IV — The Short-Circuit Transient
+# Part IV - The Short-Circuit Transient
 
 ---
 
@@ -1038,13 +1038,13 @@ $$
 v_{as}(t) = v_{bs}(t) = v_{cs}(t) = 0 \quad \text{for all } t \ge 0
 $$
 
-In the d–q stationary frame, this is:
+In the d-q stationary frame, this is:
 
 $$
 v_{ds}(t) = v_{qs}(t) = 0 \quad \implies \quad v_s(t) = 0
 $$
 
-The term "bolted" means the fault has zero impedance — ideal short circuit. In practice, a bolted fault produces the highest possible fault current and torque, making it the conservative case for equipment rating.
+The term "bolted" means the fault has zero impedance - ideal short circuit. In practice, a bolted fault produces the highest possible fault current and torque, making it the conservative case for equipment rating.
 
 ### 8.2 The Fault as an Initial-Value Problem
 
@@ -1074,7 +1074,7 @@ $$
 v = \frac{d\psi}{dt} \quad \Longrightarrow \quad \psi(t) = \psi(0) + \int_0^t v(\tau)\,d\tau
 $$
 
-For the integral to be finite, $\psi(t)$ must be a continuous function of time — it cannot jump instantaneously. If it did, $d\psi/dt$ would be infinite, requiring infinite voltage.
+For the integral to be finite, $\psi(t)$ must be a continuous function of time - it cannot jump instantaneously. If it did, $d\psi/dt$ would be infinite, requiring infinite voltage.
 
 Therefore, even though the voltage changes abruptly from $V_{s0}$ to $0$ at $t = 0$, the flux linkages $\psi_s$ and $\psi_r$ remain unchanged at the instant of the fault:
 
@@ -1098,7 +1098,7 @@ $$
 i_s(0^+) = \frac{L_r \psi_{s0} - L_m \psi_{r0}}{\Delta}
 $$
 
-This generally differs from the pre-fault current $I_{s0}$, resulting in an instantaneous jump in the stator current at $t = 0$. This jump is physically realizable because the circuit inductance limits the rate of change of current, not the current itself — and the stator current is not a state variable in the flux-linkage formulation.
+This generally differs from the pre-fault current $I_{s0}$, resulting in an instantaneous jump in the stator current at $t = 0$. This jump is physically realizable because the circuit inductance limits the rate of change of current, not the current itself - and the stator current is not a state variable in the flux-linkage formulation.
 
 ---
 
@@ -1143,7 +1143,7 @@ $$
 i_s(t) = \frac{L_r}{\Delta}\psi_s(t) - \frac{L_m}{\Delta}\psi_r(t)
 $$
 
-The DC component in $\psi_s$ produces a DC component in $i_s$ that decays as $e^{-t/T_{s,dc}}$. This is what the **quick calculation**'s `DC_OFFSET_FACTOR` attempts to approximate — but the d–q model captures it exactly through the state equations.
+The DC component in $\psi_s$ produces a DC component in $i_s$ that decays as $e^{-t/T_{s,dc}}$. This is what the **quick calculation**'s `DC_OFFSET_FACTOR` attempts to approximate - but the d-q model captures it exactly through the state equations.
 
 ### 9.3 Relationship Between Inception Angle and DC Offset Magnitude
 
@@ -1174,7 +1174,7 @@ For the test motor, $T_{s,dc} \approx 84.8$ ms. This means:
 - After $50$ ms ($\approx 0.6 \cdot T_{s,dc}$), the DC offset has decayed to $e^{-0.6} \approx 55\%$ of its initial value.
 - After $200$ ms ($\approx 2.36 \cdot T_{s,dc}$), the DC offset has decayed to $e^{-2.36} \approx 9.4\%$ of its initial value.
 
-This explains the comparison results: the quick and d–q methods agree well for $t > 100$ ms (the DC offset has mostly decayed), but differ significantly for $t < 50$ ms (the DC offset is dominant).
+This explains the comparison results: the quick and d-q methods agree well for $t > 100$ ms (the DC offset has mostly decayed), but differ significantly for $t < 50$ ms (the DC offset is dominant).
 
 ### 9.5 Effect on the Torque Waveform
 
@@ -1187,10 +1187,10 @@ T_e(t) = T_{dc}(t) + T_{ac}(t)
 $$
 
 where:
-- $T_{dc}(t)$ — decays with $T_{s,dc}$, oscillates at $\omega_s$ (from the interaction of the DC stator current with the AC rotor flux).
-- $T_{ac}(t)$ — decays with $T_{r,sc}/2$, oscillates at $(1-s)\omega_s$ (from the interaction of the AC stator and rotor currents).
+- $T_{dc}(t)$ - decays with $T_{s,dc}$, oscillates at $\omega_s$ (from the interaction of the DC stator current with the AC rotor flux).
+- $T_{ac}(t)$ - decays with $T_{r,sc}/2$, oscillates at $(1-s)\omega_s$ (from the interaction of the AC stator and rotor currents).
 
-The sum of these components produces the **asymmetric waveform** observed in the d–q model results: the positive and negative peaks are not equal because the $T_{dc}$ component adds constructively to one polarity and destructively to the other.
+The sum of these components produces the **asymmetric waveform** observed in the d-q model results: the positive and negative peaks are not equal because the $T_{dc}$ component adds constructively to one polarity and destructively to the other.
 
 The quick calculation, using a single-frequency cosine model, cannot capture this asymmetry without the optional $DC\_OFFSET\_FACTOR$ term.
 
@@ -1198,7 +1198,7 @@ The quick calculation, using a single-frequency cosine model, cannot capture thi
 
 ## 10. The Fault Inception Angle
 
-### 10.1 Physical Meaning of θ₀
+### 10.1 Physical Meaning of theta0
 
 The **fault inception angle** $\theta_0$ is the instantaneous phase angle of the $a$-phase voltage at the moment the fault occurs:
 
@@ -1220,17 +1220,17 @@ $$
 v_{cs}(0) = \sqrt{2} V_{ph} \cos(\theta_0 - 240^\circ)
 $$
 
-In the stationary d–q frame:
+In the stationary d-q frame:
 
 $$
 V_{s0} = \sqrt{2} V_{ph} e^{j\theta_0} = \sqrt{2} V_{ph} (\cos\theta_0 + j \sin\theta_0)
 $$
 
-$\theta_0$ is set by the `INITIAL_VOLTAGE_ANGLE_DEG` parameter in `input.jsonc` (line 51). In a real power system, the fault inception angle is essentially random — the fault can occur at any point on the voltage waveform.
+$\theta_0$ is set by the `INITIAL_VOLTAGE_ANGLE_DEG` parameter in `input.jsonc` (line 51). In a real power system, the fault inception angle is essentially random - the fault can occur at any point on the voltage waveform.
 
 ### 10.2 Effect on Initial Conditions
 
-The inception angle affects the initial conditions through the applied voltage space vector $V_{s0}$. Expanding the 2×2 system:
+The inception angle affects the initial conditions through the applied voltage space vector $V_{s0}$. Expanding the 2x2 system:
 
 $$
 \begin{bmatrix}
@@ -1260,14 +1260,14 @@ $$
 |\psi_s^{dc}|^2 \propto \cos^2\theta_0 + \sin^2\theta_0 = 1
 $$
 
-This is angle-invariant — the DC offset magnitude is constant, but it shifts between the two axes as $\theta_0$ varies.
+This is angle-invariant - the DC offset magnitude is constant, but it shifts between the two axes as $\theta_0$ varies.
 
 The torque waveform depends on the interaction of the DC offset with the AC components. As $\theta_0$ changes:
 - The **positive peak** torque varies (higher when the DC offset aligns constructively with the AC component).
 - The **negative peak** torque varies (higher when the DC offset aligns destructively).
 - The **peak absolute torque** $\max(|T_e|)$ remains nearly constant because the total transient energy is angle-invariant.
 
-### 10.4 Periodicity: Why 180°
+### 10.4 Periodicity: Why 180
 
 The transformation $abc \to dq$ involves $\cos\theta_0$ and $\sin\theta_0$ terms. Replacing $\theta_0$ by $\theta_0 + 180^\circ$:
 
@@ -1303,7 +1303,7 @@ $$
 
 The peak value of $|T_e|$ is therefore determined by the total available magnetic energy, which is $\theta_0$-invariant.
 
-For **unbalanced faults**, this invariance does not hold — the zero-sequence and negative-sequence components introduce additional energy terms that depend on $\theta_0$.
+For **unbalanced faults**, this invariance does not hold - the zero-sequence and negative-sequence components introduce additional energy terms that depend on $\theta_0$.
 
 ### 10.6 Asymmetry Mechanism
 
@@ -1329,31 +1329,31 @@ For small $s$ (near synchronous speed), $(1-s)\omega_s \approx \omega_s$, so the
 
 The `scim_calc/sweep.py` module implements a two-phase search to characterize the torque as a function of $\theta_0$:
 
-**Phase 1 — Coarse sweep:**
+**Phase 1 - Coarse sweep:**
 - Range: $0^\circ$ to $180^\circ$ (the $180^\circ$ periodicity).
 - Step: default $2^\circ$ (configurable via `coarse_step`).
 - Resolution: reduced to `max(500, N_POINTS//10)` time steps over `min(0.1, T_END)` seconds.
 - This phase identifies the approximate angle that maximizes $\max(|T_e|)$.
 
-**Phase 2 — Refinement:**
+**Phase 2 - Refinement:**
 - Range: $\pm 4^\circ$ (configurable via `refine_width`) around the coarse worst angle.
 - Step: default $0.5^\circ$ (configurable via `refine_step`).
 - Resolution: full (original `N_POINTS` and `T_END`).
 - This phase pinpoints the exact worst-case angle.
 
-The two-phase approach reduces computation time by approximately 10× compared to a full-resolution sweep of all 180 angles.
+The two-phase approach reduces computation time by approximately 10x compared to a full-resolution sweep of all 180 angles.
 
-**Implementation:** `scim_calc/sweep.py`, lines 18–108. The function `angle_sweep()` returns arrays of peak positive, negative, and absolute torque for each angle, along with identified worst-case values.
-
----
-
-# Part V — Numerical Integration
+**Implementation:** `scim_calc/sweep.py`, lines 18-108. The function `angle_sweep()` returns arrays of peak positive, negative, and absolute torque for each angle, along with identified worst-case values.
 
 ---
 
-## 11. The Runge–Kutta 4th-Order Method (RK4)
+# Part V - Numerical Integration
 
-### 11.1 The General Runge–Kutta Framework
+---
+
+## 11. The Runge-Kutta 4th-Order Method (RK4)
+
+### 11.1 The General Runge-Kutta Framework
 
 For an initial-value problem:
 
@@ -1361,9 +1361,9 @@ $$
 \frac{dy}{dt} = f(t, y), \quad y(t_0) = y_0
 $$
 
-Runge–Kutta methods approximate $y_{n+1}$ from $y_n$ by evaluating $f$ at one or more intermediate points within the interval $[t_n, t_{n+1}]$.
+Runge-Kutta methods approximate $y_{n+1}$ from $y_n$ by evaluating $f$ at one or more intermediate points within the interval $[t_n, t_{n+1}]$.
 
-An $s$-stage Runge–Kutta method is defined by the Butcher tableau:
+An $s$-stage Runge-Kutta method is defined by the Butcher tableau:
 
 $$
 \begin{array}{c|cccc}
@@ -1411,7 +1411,7 @@ y_{n+1} &= y_n + \frac{h}{6}(k_1 + 2k_2 + 2k_3 + k_4)
 \end{aligned}
 $$
 
-**Implementation:** `scim_calc/dq.py`, lines 92–97:
+**Implementation:** `scim_calc/dq.py`, lines 92-97:
 ```python
 def rk4_step(state, dt):
     k1 = rhs(state)
@@ -1521,7 +1521,7 @@ $$
 
 For this system, Euler would require $\lambda h < 2$, giving $h < 2 / 12 \approx 0.17$ s. This is satisfied, but the accuracy would be poor: with 5000 steps, the global error would be $\mathcal{O}(h) \approx \mathcal{O}(4 \times 10^{-5})$, compared to $\mathcal{O}(h^4) \approx \mathcal{O}(10^{-18})$ for RK4.
 
-### 12.2 Trapezoidal Integration (Crank–Nicolson)
+### 12.2 Trapezoidal Integration (Crank-Nicolson)
 
 $$
 y_{n+1} = y_n + \frac{h}{2} \left[ f(t_n, y_n) + f(t_{n+1}, y_{n+1}) \right]
@@ -1530,13 +1530,13 @@ $$
 - **Order:** 2nd-order accurate.
 - **Stability:** A-stable (the stability region is the entire left half-plane). This means trapezoidal integration is stable for any step size for stable systems.
 - **Pros:** Unconditionally stable; good accuracy.
-- **Cons:** Implicit — requires solving a system of equations at each step. For the nonlinear induction-machine ODE, this would require Newton iteration at each step.
+- **Cons:** Implicit - requires solving a system of equations at each step. For the nonlinear induction-machine ODE, this would require Newton iteration at each step.
 
 Trapezoidal integration is widely used in electromagnetic transient programs (EMTP-type) for power system simulations. However, the nonlinearity from the $j\omega_{re}\psi_r$ term and the mechanical equation would require Newton iterations, adding significant complexity per step.
 
-### 12.3 Runge–Kutta 45 (Adaptive)
+### 12.3 Runge-Kutta 45 (Adaptive)
 
-RK45 (also known as **ode45** or the **Dormand–Prince** method) uses a 5th-order formula with a 4th-order embedded formula to estimate the local error and adjust the step size automatically.
+RK45 (also known as **ode45** or the **Dormand-Prince** method) uses a 5th-order formula with a 4th-order embedded formula to estimate the local error and adjust the step size automatically.
 
 - **Order:** 5th-order (global error $\mathcal{O}(h^5)$).
 - **Pros:** Automatic step-size control; excellent accuracy; no tuning required.
@@ -1549,7 +1549,7 @@ For this application, the ODE is smooth and the dynamics are well-understood, so
 BDF methods (also called **Gear's methods**) are implicit multi-step methods designed for stiff systems.
 
 - **Order:** Variable (1st to 6th).
-- **Stability:** A-stable (BDF1, BDF2) or nearly A-stable (BDF3–BDF6).
+- **Stability:** A-stable (BDF1, BDF2) or nearly A-stable (BDF3-BDF6).
 - **Pros:** Excellent for stiff systems; large step sizes possible.
 - **Cons:** Implicit (require Newton iteration); multi-step (require starting procedure); complex implementation.
 
@@ -1577,15 +1577,15 @@ BDF methods are the standard for circuit simulation (SPICE) and power system tra
 
 ---
 
-# Part VI — Output and Post-Processing
+# Part VI - Output and Post-Processing
 
 ---
 
 ## 13. Torque Computation at Each Step
 
-### 13.1 Flux–Current Inversion
+### 13.1 Flux-Current Inversion
 
-At each time step, the stator and rotor currents are recovered from the flux linkages by inverting the 2×2 inductance matrix:
+At each time step, the stator and rotor currents are recovered from the flux linkages by inverting the 2x2 inductance matrix:
 
 ```python
 i_s = (Lr * psi_s - Lm * psi_r) / Delta
@@ -1596,7 +1596,7 @@ This is called from two places:
 1. Inside `rhs()` (to compute $d\psi_s/dt$ and $d\psi_r/dt$).
 2. In the main time-stepping loop (to compute torque for the output trace).
 
-While this duplicates the $i_s$ computation (it is computed once in `rhs()` and again at the beginning of the next step in the main loop), the cost is negligible for a 2×2 matrix inversion (2 multiplications, 1 addition, 1 division per current).
+While this duplicates the $i_s$ computation (it is computed once in `rhs()` and again at the beginning of the next step in the main loop), the cost is negligible for a 2x2 matrix inversion (2 multiplications, 1 addition, 1 division per current).
 
 ### 13.2 Torque from Space Vectors
 
@@ -1628,11 +1628,11 @@ This ensures that the output torque $T_{fault}$ is positive at $t = 0$ (motoring
 ### 13.4 Numerical Considerations
 
 The torque computation involves:
-- **Complex conjugate:** $\psi_s i_s^* = (\psi_{ds} + j\psi_{qs})(i_{ds} - j i_{qs})$ — 2 real multiplications and 2 real additions.
-- **Imaginary part:** extract the coefficient of $j$ — trivial.
+- **Complex conjugate:** $\psi_s i_s^* = (\psi_{ds} + j\psi_{qs})(i_{ds} - j i_{qs})$ - 2 real multiplications and 2 real additions.
+- **Imaginary part:** extract the coefficient of $j$ - trivial.
 - **Multiplication by $-3p/2$:** 1 real multiplication.
 
-The total operation count is approximately 5–10 floating-point operations per time step for the torque computation.
+The total operation count is approximately 5-10 floating-point operations per time step for the torque computation.
 
 The torque values stored in the output array are in N·m. The percentage relative to nominal is computed during CSV export:
 
@@ -1644,9 +1644,9 @@ T_pct = 100.0 * d["T_fault"] / d["T_nom"]
 
 ## 14. Saved Outputs
 
-### 14.1 CSV Format for the d–q Model
+### 14.1 CSV Format for the d-q Model
 
-The d–q model output is saved to `data/dq_scim_short_circuit.csv` with columns:
+The d-q model output is saved to `data/dq_scim_short_circuit.csv` with columns:
 
 | Column | Description | Unit | Type |
 |---|---|---|---|
@@ -1658,7 +1658,7 @@ The d–q model output is saved to `data/dq_scim_short_circuit.csv` with columns
 
 The CSV uses scientific notation for all values (default `numpy.savetxt` formatting) with a header row. The `comments=""` argument ensures no `#` prefix on the header.
 
-**Implementation:** `run.py`, lines 94–104 (`_save_dq()`).
+**Implementation:** `run.py`, lines 94-104 (`_save_dq()`).
 
 ### 14.2 Comparison with the Quick Calculation
 
@@ -1689,29 +1689,29 @@ The comparison module (`scim_calc/compare.py`) computes:
 
 The time-segmented metrics are valuable because the two methods agree well in the late transient (after the DC offset has decayed) but differ significantly in the early transient. This confirms that the primary discrepancy is the DC offset effect.
 
-**Implementation:** `scim_calc/compare.py`, lines 11–59 (`compute_comparison()`).
+**Implementation:** `scim_calc/compare.py`, lines 11-59 (`compute_comparison()`).
 
 ### 14.4 Overlay Plot
 
 The overlay plot (`data/scim_short_circuit_overlay.png`) shows both torque traces on the same axes:
 
 - Quick calculation: dashed line
-- d–q model: solid line
+- d-q model: solid line
 - Nominal torque: dotted horizontal line at 100%
 
-This plot provides a visual comparison of the two methods' waveforms. The asymmetry of the d–q trace (larger negative peaks) and the symmetry of the quick trace are immediately visible.
+This plot provides a visual comparison of the two methods' waveforms. The asymmetry of the d-q trace (larger negative peaks) and the symmetry of the quick trace are immediately visible.
 
 ---
 
-# Part VII — Validation and Analysis
+# Part VII - Validation and Analysis
 
 ---
 
-## 15. Comparison of Methods: Quick vs d–q
+## 15. Comparison of Methods: Quick vs d-q
 
 ### 15.1 Theoretical Differences
 
-| Aspect | Quick Calculation | d–q Model |
+| Aspect | Quick Calculation | d-q Model |
 |---|---|---|
 | **Model type** | Closed-form analytical | State-space time-domain |
 | **Torque spectrum** | Single frequency ($\omega_T$) | Full multi-component spectrum |
@@ -1729,22 +1729,22 @@ This plot provides a visual comparison of the two methods' waveforms. The asymme
 
 For the 2000 HP, 4 kV, 60 Hz, 2-pole test motor at $\theta_0 = 0^\circ$:
 
-| Metric | Quick | d–q | Difference |
+| Metric | Quick | d-q | Difference |
 |---|---|---|---|
 | $T_{nom}$ | 3989 N·m | 3989 N·m | 0% |
 | Positive peak | $+305.7\%\ T_n$ | $+299.6\%\ T_n$ | $+2.0\%$ |
 | Negative peak | $-376.3\%\ T_n$ | $-416.8\%\ T_n$ | **$-10.8\%$** |
 | Peak $|T|$ | $376.3\%\ T_n$ | $416.8\%\ T_n$ | **$-9.7\%$** |
-| RMS difference (full) | — | — | $12.8\%\ T_n$ |
-| RMS diff ($t < 50$ ms) | — | — | $23.7\%\ T_n$ |
-| RMS diff ($t > 100$ ms) | — | — | $2.5\%\ T_n$ |
-| Max pointwise diff | — | — | $51.0\%\ T_n$ |
+| RMS difference (full) | - | - | $12.8\%\ T_n$ |
+| RMS diff ($t < 50$ ms) | - | - | $23.7\%\ T_n$ |
+| RMS diff ($t > 100$ ms) | - | - | $2.5\%\ T_n$ |
+| Max pointwise diff | - | - | $51.0\%\ T_n$ |
 
-The quick calculation underestimates the worst-case negative torque by **10.8%** relative to the d–q model. This is a significant difference for equipment rating studies, where the worst-case torque determines shaft stress and coupling requirements.
+The quick calculation underestimates the worst-case negative torque by **10.8%** relative to the d-q model. This is a significant difference for equipment rating studies, where the worst-case torque determines shaft stress and coupling requirements.
 
 ### 15.3 Component-by-Component Spectral Analysis
 
-The d–q torque can be decomposed into three main spectral components:
+The d-q torque can be decomposed into three main spectral components:
 
 1. **Rotor-frequency component** at $(1-s)\omega_s$ ($\approx 374$ rad/s for the test motor): This is the dominant component and the only one captured by the quick calculation. It arises from the interaction of the fundamental-frequency stator and rotor currents.
 
@@ -1752,7 +1752,7 @@ The d–q torque can be decomposed into three main spectral components:
 
 3. **Slip-frequency component** at $2s\omega_s$ ($\approx 5.9$ rad/s): A small-amplitude component arising from second-order interactions. It is negligible for small slip.
 
-The quick calculation models only component (1), and with a single time constant approximation. The d–q model captures all three components and their interactions naturally.
+The quick calculation models only component (1), and with a single time constant approximation. The d-q model captures all three components and their interactions naturally.
 
 ### 15.4 When Each Method Is Appropriate
 
@@ -1762,7 +1762,7 @@ The quick calculation models only component (1), and with a single time constant
 - Only order-of-magnitude accuracy is required ($\pm 20\%$).
 - The study requires negligible computation time.
 
-**Use the d–q model when:**
+**Use the d-q model when:**
 - Accurate peak torque values are needed for equipment rating.
 - The asymmetry between positive and negative peaks matters.
 - Point-on-wave effects are being studied.
@@ -1787,7 +1787,7 @@ Sensitivity: For the test motor, a $\pm 10\%$ change in $R_s$ changes the peak $
 
 $R_r$ affects:
 - The **rotor short-circuit time constant** $T_{r,sc} = L_{r,sc} / R_r$. Higher $R_r$ reduces $T_{r,sc}$, accelerating the decay of the AC torque component.
-- The **pre-fault slip** (through the torque–slip relationship).
+- The **pre-fault slip** (through the torque-slip relationship).
 - The **peak torque magnitude** (higher $R_r$ increases damping).
 
 Sensitivity: A $\pm 10\%$ change in $R_r$ changes the peak $|T|$ by approximately $\pm 5\%$. $R_r$ is one of the most sensitive parameters.
@@ -1818,7 +1818,7 @@ $J$ only matters when speed dynamics are enabled. With speed dynamics:
 
 For worst-case analysis, $J = \infty$ (constant speed) is the conservative choice. The default configuration uses this approach.
 
-### 16.6 Fault Inception Angle θ₀
+### 16.6 Fault Inception Angle theta0
 
 As analyzed in [Section 10](#10-the-fault-inception-angle), $\theta_0$ affects the **distribution** of the torque between positive and negative peaks but not the **peak absolute magnitude** for balanced faults.
 
@@ -1829,7 +1829,7 @@ The range of $\theta_0$ produces:
 
 ---
 
-# Part VIII — Extensions and Alternatives
+# Part VIII - Extensions and Alternatives
 
 ---
 
@@ -1839,7 +1839,7 @@ The range of $\theta_0$ produces:
 
 **Assumption:** All inductances ($L_{\ell s}$, $L_{\ell r}$, $L_m$) are constant, independent of current.
 
-**Reality:** In ferromagnetic materials, the incremental permeability decreases at high flux densities. During a short circuit, the stator current can reach 5–10 times rated value, and the flux may push the iron into saturation.
+**Reality:** In ferromagnetic materials, the incremental permeability decreases at high flux densities. During a short circuit, the stator current can reach 5-10 times rated value, and the flux may push the iron into saturation.
 
 **Effect on results:** Saturation reduces $L_m$ at high currents, which:
 - Reduces the peak torque (less flux available for torque production).
@@ -1847,7 +1847,7 @@ The range of $\theta_0$ produces:
 - Changes the current waveshape (flattened peaks from saturation).
 
 **Modelling alternatives:**
-- **Piecewise-linear saturation:** Approximate the $B-H$ curve with a piecewise-linear $i_m$–$\psi_m$ relationship. $L_m$ takes two values: unsaturated (normal) and saturated (fault).
+- **Piecewise-linear saturation:** Approximate the $B-H$ curve with a piecewise-linear $i_m$-$\psi_m$ relationship. $L_m$ takes two values: unsaturated (normal) and saturated (fault).
 - **Exponential saturation:** Use a smooth function like $\psi_m = a \tanh(b i_m)$ or $\psi_m = a i_m / (1 + b |i_m|)$.
 - **Look-up table:** Use manufacturer-provided saturation data.
 
@@ -1855,7 +1855,7 @@ The range of $\theta_0$ produces:
 
 ### 17.2 Balanced Fault Only
 
-**Assumption:** The fault is a balanced three-phase bolted short circuit — all three phases are shorted to each other and to ground through zero impedance.
+**Assumption:** The fault is a balanced three-phase bolted short circuit - all three phases are shorted to each other and to ground through zero impedance.
 
 **Reality:** Power system faults can be:
 - **Line-to-line (L-L):** Two phases shorted together.
@@ -1863,7 +1863,7 @@ The range of $\theta_0$ produces:
 - **Double line-to-ground (L-L-G):** Two phases shorted to ground.
 - **Three-phase (L-L-L):** All three phases shorted (this is the modelled case).
 
-**Why not implemented:** Unbalanced faults require sequence-component analysis or a full $abc$-frame model. The d–q model in the stationary frame implicitly assumes balanced operation. Extending to unbalanced faults would require either:
+**Why not implemented:** Unbalanced faults require sequence-component analysis or a full $abc$-frame model. The d-q model in the stationary frame implicitly assumes balanced operation. Extending to unbalanced faults would require either:
 - A full three-phase ($abc$) model with six coupled differential equations (three stator, three rotor).
 - A sequence-component approach with positive, negative, and zero-sequence networks.
 
@@ -1871,7 +1871,7 @@ The range of $\theta_0$ produces:
 
 **Assumption:** The rotor can be represented by a single equivalent circuit (resistance $R_r$, leakage inductance $L_{\ell r}$).
 
-**Reality:** Large induction motors often have **double-cage** or **deep-bar** rotors, which provide different characteristics during starting (high resistance, high torque) and running (low resistance, high efficiency). These rotors have two effective time constants — a fast one for the starting cage and a slow one for the running cage.
+**Reality:** Large induction motors often have **double-cage** or **deep-bar** rotors, which provide different characteristics during starting (high resistance, high torque) and running (low resistance, high efficiency). These rotors have two effective time constants - a fast one for the starting cage and a slow one for the running cage.
 
 **Modelling approach:** A double-cage rotor adds an additional rotor circuit:
 
@@ -1905,7 +1905,7 @@ This increases the model order by two (two additional flux states). The paramete
 
 **Assumption:** Before the fault, the motor terminals are connected to an ideal voltage source with zero impedance. The fault is at the motor terminals.
 
-**Reality:** The motor is connected through cables, transformers, and the upstream network, all of which have impedance. A fault may not be exactly at the motor terminals — it could be on the feeder cable or within the motor itself.
+**Reality:** The motor is connected through cables, transformers, and the upstream network, all of which have impedance. A fault may not be exactly at the motor terminals - it could be on the feeder cable or within the motor itself.
 
 **Effect:** Additional impedance between the source and the fault reduces the short-circuit current and torque. The assumption of a bolted fault at the terminals is the most conservative case.
 
@@ -1915,7 +1915,7 @@ This increases the model order by two (two additional flux states). The paramete
 
 **Reality:** The shaft system between the motor and the load has torsional natural frequencies. A sudden torque transient can excite torsional oscillations, which if close to a natural frequency, can produce shaft torques significantly higher than the electromagnetic torque computed here.
 
-**Effect:** This is a separate analysis typically performed using **multi-mass torsional models** with spring–mass–damper elements. The electromagnetic torque computed by this model serves as the **input** to the torsional analysis.
+**Effect:** This is a separate analysis typically performed using **multi-mass torsional models** with spring-mass-damper elements. The electromagnetic torque computed by this model serves as the **input** to the torsional analysis.
 
 ---
 
@@ -1925,7 +1925,7 @@ This increases the model order by two (two additional flux states). The paramete
 
 To include saturation:
 
-**Approach 1 — Variable magnetizing inductance:**
+**Approach 1 - Variable magnetizing inductance:**
 ```python
 def Lm_sat(psi_m):
     """Saturated magnetizing inductance."""
@@ -1938,8 +1938,8 @@ def Lm_sat(psi_m):
 
 where $\psi_m = \psi_s - L_{\ell s} i_s$ is the air-gap flux, $\psi_{threshold}$ is the knee-point flux, and $\alpha \approx 0.5$ controls the saturation characteristic.
 
-**Approach 2 — Iterative flux–current solution:**
-At each time step, after computing $i_s$, $i_r$ from the linear flux–current inversion, recompute $L_m$ based on $\psi_m$, then re-invert. Iterate until convergence.
+**Approach 2 - Iterative flux-current solution:**
+At each time step, after computing $i_s$, $i_r$ from the linear flux-current inversion, recompute $L_m$ based on $\psi_m$, then re-invert. Iterate until convergence.
 
 This is computationally more expensive but physically more accurate.
 
@@ -1958,7 +1958,7 @@ $$
 \end{bmatrix}
 $$
 
-The flux–current relation becomes:
+The flux-current relation becomes:
 
 $$
 \begin{bmatrix}
@@ -1975,7 +1975,7 @@ i_s \\ i_{r1} \\ i_{r2}
 \end{bmatrix}
 $$
 
-This 3×3 system must be inverted at each time step.
+This 3x3 system must be inverted at each time step.
 
 ### 18.3 Unbalanced Faults
 
@@ -2003,7 +2003,7 @@ $$
 \end{bmatrix}
 $$
 
-This approach handles any fault type but is more complex and computationally expensive than the d–q model.
+This approach handles any fault type but is more complex and computationally expensive than the d-q model.
 
 ### 18.4 Supply Impedance and Voltage Sags
 
@@ -2023,7 +2023,7 @@ This is a specialized topic in machine diagnostics and is beyond the scope of th
 
 ### 18.6 Adaptive Time-Stepping
 
-Replace fixed-step RK4 with an embedded Runge–Kutta pair (e.g., RK45 or **Bogacki–Shampine** RK23) that estimates the local error and adjusts the step size:
+Replace fixed-step RK4 with an embedded Runge-Kutta pair (e.g., RK45 or **Bogacki-Shampine** RK23) that estimates the local error and adjusts the step size:
 
 ```python
 def rk45_step(state, dt):
@@ -2058,7 +2058,7 @@ This would reduce the sweep time approximately linearly with the number of CPU c
 
 ---
 
-# Part IX — Appendices
+# Part IX - Appendices
 
 ---
 
@@ -2068,30 +2068,30 @@ This would reduce the sweep time approximately linearly with the number of CPU c
 
 | Function / class | File | Lines | Purpose |
 |---|---|---|---|
-| `load_jsonc()` | `config.py` | 16–23 | Parse JSONC config file |
-| `normalize_params()` | `config.py` | 26–104 | Compute derived parameters |
-| `currents_from_flux()` | `circuit.py` | 14–33 | Invert flux–current relation |
-| `torque_from_flux_current()` | `circuit.py` | 36–44 | Torque from space vectors |
-| `solve_prefault()` | `circuit.py` | 47–95 | Pre-fault steady state |
-| `torque_from_phasors()` | `circuit.py` | 98–124 | IEEE phasor torque |
-| `derive_slip()` | `circuit.py` | 127–174 | Slip from nameplate power |
-| `run_dq_simulation()` | `dq.py` | 19–126 | Main d–q simulation |
-| `rhs()` | `dq.py` | 72–89 | ODE right-hand side |
-| `rk4_step()` | `dq.py` | 92–97 | RK4 integration step |
-| `run_quick_calc()` | `quick.py` | 25–147 | Quick analytical calculation |
-| `angle_sweep()` | `sweep.py` | 18–108 | Two-phase angle sweep |
-| `compute_comparison()` | `compare.py` | 11–59 | Compare results |
-| `print_comparison()` | `compare.py` | 62–76 | Display comparison |
+| `load_jsonc()` | `config.py` | 16-23 | Parse JSONC config file |
+| `normalize_params()` | `config.py` | 26-104 | Compute derived parameters |
+| `currents_from_flux()` | `circuit.py` | 14-33 | Invert flux-current relation |
+| `torque_from_flux_current()` | `circuit.py` | 36-44 | Torque from space vectors |
+| `solve_prefault()` | `circuit.py` | 47-95 | Pre-fault steady state |
+| `torque_from_phasors()` | `circuit.py` | 98-124 | IEEE phasor torque |
+| `derive_slip()` | `circuit.py` | 127-174 | Slip from nameplate power |
+| `run_dq_simulation()` | `dq.py` | 19-126 | Main d-q simulation |
+| `rhs()` | `dq.py` | 72-89 | ODE right-hand side |
+| `rk4_step()` | `dq.py` | 92-97 | RK4 integration step |
+| `run_quick_calc()` | `quick.py` | 25-147 | Quick analytical calculation |
+| `angle_sweep()` | `sweep.py` | 18-108 | Two-phase angle sweep |
+| `compute_comparison()` | `compare.py` | 11-59 | Compare results |
+| `print_comparison()` | `compare.py` | 62-76 | Display comparison |
 
 ### 19.2 Top-Level Files
 
 | Function | File | Lines | Purpose |
 |---|---|---|---|
-| `main()` | `run.py` | 31–70 | Entry point |
-| `_save_quick()` | `run.py` | 77–91 | Save quick results |
-| `_save_dq()` | `run.py` | 94–104 | Save d–q results |
-| `_save_comparison()` | `run.py` | 107–114 | Save comparison |
-| `_plot_overlay()` | `run.py` | 133–150 | Generate overlay plot |
+| `main()` | `run.py` | 31-70 | Entry point |
+| `_save_quick()` | `run.py` | 77-91 | Save quick results |
+| `_save_dq()` | `run.py` | 94-104 | Save d-q results |
+| `_save_comparison()` | `run.py` | 107-114 | Save comparison |
+| `_plot_overlay()` | `run.py` | 133-150 | Generate overlay plot |
 
 ---
 
@@ -2103,15 +2103,15 @@ This would reduce the sweep time approximately linearly with the number of CPU c
 |---|---|---|
 | $v$, $i$, $\psi$ | Instantaneous voltage, current, flux linkage | V, A, V·s |
 | $V$, $I$, $\Psi$ | RMS magnitude | V, A, V·s |
-| $\bar{f}$ | Complex space vector ($f_d + j f_q$) | — |
-| $f^*$ | Complex conjugate | — |
-| $\text{Re}\{\cdot\}$, $\text{Im}\{\cdot\}$ | Real and imaginary parts | — |
+| $\bar{f}$ | Complex space vector ($f_d + j f_q$) | - |
+| $f^*$ | Complex conjugate | - |
+| $\text{Re}\{\cdot\}$, $\text{Im}\{\cdot\}$ | Real and imaginary parts | - |
 | $\omega_s$ | Electrical synchronous frequency | rad/s |
 | $f$ | Electrical frequency (Hz) | Hz |
-| $s$ | Slip (per-unit) | — |
-| $p$ | Number of pole pairs | — |
+| $s$ | Slip (per-unit) | - |
+| $p$ | Number of pole pairs | - |
 | $\theta_0$ | Fault inception angle | rad |
-| $j$ | Imaginary unit ($\sqrt{-1}$) | — |
+| $j$ | Imaginary unit ($\sqrt{-1}$) | - |
 
 ### 20.2 Machine Parameters
 
@@ -2128,9 +2128,9 @@ This would reduce the sweep time approximately linearly with the number of CPU c
 | $L_s = L_{\ell s} + L_m$ | `Ls` | Stator self-inductance | H |
 | $L_r = L_{\ell r} + L_m$ | `Lr` | Rotor self-inductance | H |
 | $\Delta = L_s L_r - L_m^2$ | `Delta` | Leakage determinant | H² |
-| $\sigma = 1 - L_m^2/(L_s L_r)$ | — | Leakage coefficient | — |
-| $V_{LL}$ | `V_LL` | Line–line RMS voltage | V |
-| $V_{ph}$ | `V_ph` | Phase (line–neutral) RMS voltage | V |
+| $\sigma = 1 - L_m^2/(L_s L_r)$ | - | Leakage coefficient | - |
+| $V_{LL}$ | `V_LL` | Line-line RMS voltage | V |
+| $V_{ph}$ | `V_ph` | Phase (line-neutral) RMS voltage | V |
 | $J$ | `J` | Total moment of inertia | kg·m² |
 | $P_{mech}$ | `P_mech` | Mechanical output power | W |
 
@@ -2151,35 +2151,35 @@ This would reduce the sweep time approximately linearly with the number of CPU c
 | $X_{s,sc}$ | `Xs_sc` | Stator short-circuit reactance | $\Omega$ |
 | $X_{r,sc}$ | `Xr_sc` | Rotor short-circuit reactance | $\Omega$ |
 | $I_{sc,ac,0}$ | `I_sc_ac0` | Initial symmetrical RMS fault current | A |
-| $\Psi_{m0}$ | — | Initial air-gap flux (RMS) | V·s |
+| $\Psi_{m0}$ | - | Initial air-gap flux (RMS) | V·s |
 | $T_{env,0}$ | `T_env0` | Initial torque envelope | N·m |
 
 ---
 
 ## 21. References
 
-1. **P. C. Krause, O. Wasynczuk, S. D. Sudhoff, and S. Pekarek**, *Analysis of Electric Machinery and Drive Systems*, 3rd ed. Wiley-IEEE Press, 2013. — The standard reference for d–q modelling of electric machines. Chapters 4 (Reference-Frame Theory) and 6 (Induction Machines) are directly relevant.
+1. **P. C. Krause, O. Wasynczuk, S. D. Sudhoff, and S. Pekarek**, *Analysis of Electric Machinery and Drive Systems*, 3rd ed. Wiley-IEEE Press, 2013. - The standard reference for d-q modelling of electric machines. Chapters 4 (Reference-Frame Theory) and 6 (Induction Machines) are directly relevant.
 
-2. **I. Boldea and S. A. Nasar**, *The Induction Machine Handbook*. CRC Press, 2002. — Comprehensive treatment of induction machine theory, including transient analysis (Chapter 14) and fault conditions.
+2. **I. Boldea and S. A. Nasar**, *The Induction Machine Handbook*. CRC Press, 2002. - Comprehensive treatment of induction machine theory, including transient analysis (Chapter 14) and fault conditions.
 
-3. **IEEE Standard 112**, *IEEE Standard Test Procedure for Polyphase Induction Motors and Generators*. — The IEEE equivalent circuit and torque computation standard. Defines the per-phase equivalent circuit used in `circuit.py:torque_from_phasors()`.
+3. **IEEE Standard 112**, *IEEE Standard Test Procedure for Polyphase Induction Motors and Generators*. - The IEEE equivalent circuit and torque computation standard. Defines the per-phase equivalent circuit used in `circuit.py:torque_from_phasors()`.
 
-4. **J. C. Butcher**, *Numerical Methods for Ordinary Differential Equations*, 3rd ed. Wiley, 2016. — The definitive reference on Runge–Kutta methods. The RK4 Butcher tableau and stability analysis in Section 11 follow this reference.
+4. **J. C. Butcher**, *Numerical Methods for Ordinary Differential Equations*, 3rd ed. Wiley, 2016. - The definitive reference on Runge-Kutta methods. The RK4 Butcher tableau and stability analysis in Section 11 follow this reference.
 
-5. **U. Hairer, S. P. Nørsett, and G. Wanner**, *Solving Ordinary Differential Equations I: Nonstiff Problems*, 2nd ed. Springer, 1993. — Comprehensive treatment of RK methods, including error analysis and stiffness classification.
+5. **U. Hairer, S. P. Nørsett, and G. Wanner**, *Solving Ordinary Differential Equations I: Nonstiff Problems*, 2nd ed. Springer, 1993. - Comprehensive treatment of RK methods, including error analysis and stiffness classification.
 
-6. **T. A. Lipo**, *Introduction to AC Machine Design*. Wiley-IEEE Press, 2017. — Modern treatment of machine design with transient analysis perspectives. Chapter 7 covers short-circuit torques.
+6. **T. A. Lipo**, *Introduction to AC Machine Design*. Wiley-IEEE Press, 2017. - Modern treatment of machine design with transient analysis perspectives. Chapter 7 covers short-circuit torques.
 
-7. **P. L. Alger**, *Induction Machines: Their Behavior and Uses*, 2nd ed. Gordon and Breach, 1970. — Classic text. Chapter 9 covers the short-circuit transient in detail, including the analytical solution for the DC offset.
+7. **P. L. Alger**, *Induction Machines: Their Behavior and Uses*, 2nd ed. Gordon and Breach, 1970. - Classic text. Chapter 9 covers the short-circuit transient in detail, including the analytical solution for the DC offset.
 
-8. **A. E. Fitzgerald, C. Kingsley, and S. D. Umans**, *Electric Machinery*, 6th ed. McGraw-Hill, 2003. — Standard undergraduate text. Chapter 6 covers induction machines; the d–q transformation is introduced in Chapter 3.
+8. **A. E. Fitzgerald, C. Kingsley, and S. D. Umans**, *Electric Machinery*, 6th ed. McGraw-Hill, 2003. - Standard undergraduate text. Chapter 6 covers induction machines; the d-q transformation is introduced in Chapter 3.
 
-9. **N. Mohan, T. M. Undeland, and W. P. Robbins**, *Power Electronics: Converters, Applications, and Design*, 3rd ed. Wiley, 2003. — Reference for the amplitude-invariant vs power-invariant transformation conventions (Appendix A).
+9. **N. Mohan, T. M. Undeland, and W. P. Robbins**, *Power Electronics: Converters, Applications, and Design*, 3rd ed. Wiley, 2003. - Reference for the amplitude-invariant vs power-invariant transformation conventions (Appendix A).
 
-10. **H. W. Dommel**, *EMTP Theory Book*, 2nd ed. Microtran Power System Analysis Corporation, 1996. — The reference for electromagnetic transient simulation in power systems. The trapezoidal integration method (Section 12.2) is the EMTP standard.
+10. **H. W. Dommel**, *EMTP Theory Book*, 2nd ed. Microtran Power System Analysis Corporation, 1996. - The reference for electromagnetic transient simulation in power systems. The trapezoidal integration method (Section 12.2) is the EMTP standard.
 
 ---
 
-> **Document version:** 2.0 — July 2026  
+> **Document version:** 2.0 - July 2026  
 > **Corresponding code version:** `scim_calc/` package as restructured July 2026  
 > **Author:** Generated in collaboration with opencode AI assistant

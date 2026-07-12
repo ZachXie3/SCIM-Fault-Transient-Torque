@@ -1,4 +1,4 @@
-# SCIM Three-Phase Terminal Short Circuit — Quick Calculation Workflow
+# SCIM Three-Phase Terminal Short Circuit - Quick Calculation Workflow
 
 ## Purpose
 

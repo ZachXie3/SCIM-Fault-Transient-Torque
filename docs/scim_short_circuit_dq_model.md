@@ -1,4 +1,4 @@
-# SCIM Three-Phase Terminal Short Circuit — dq / State-Space Workflow
+# SCIM Three-Phase Terminal Short Circuit - dq / State-Space Workflow
 
 ## Purpose
 
@@ -63,7 +63,7 @@ $$
 \psi_r=\psi_{dr}+j\psi_{qr}
 $$
 
-Flux–current relations and their inversion (evaluated at every time step):
+Flux-current relations and their inversion (evaluated at every time step):
 
 $$
 \begin{aligned}
