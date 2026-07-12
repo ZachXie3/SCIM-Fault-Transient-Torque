@@ -1,13 +1,19 @@
 """
-Sweep fault inception angle to find the worst-case transient torque.
+Sweep fault inception angle - validation and infrastructure tool.
+
+For the ideal balanced three-phase terminal short-circuit model implemented
+here, the electromagnetic torque is EXACTLY invariant to the inception angle
+(rotational symmetry of the dq model). This sweep therefore serves as a
+VALIDATION ROUTINE: it confirms that the simulation produces identical torque
+traces (within floating-point tolerance) for all inception angles.
 
 Uses a two-phase approach for efficiency:
   1. Coarse sweep over [0, 180) degrees at a user-specified step.
   2. Fine refinement around the coarse worst-case angle.
 
-The peak absolute torque is invariant with inception angle for this motor
-(classical result for balanced faults), but the positive/negative asymmetry
-varies. This sweep quantifies the asymmetry range.
+Future extensions that break rotational symmetry (unbalanced faults,
+saturation with saliency, non-sinusoidal windings) will exhibit angle
+dependence. This module provides the infrastructure for detecting it.
 """
 
 import numpy as np

@@ -263,7 +263,7 @@ Three common reference frames are available for induction machine analysis:
 
 This project uses the **stationary reference frame** for the following reasons:
 
-1. **The short-circuit condition $v_s = 0$ is trivial.** In the stationary frame, setting $v_{ds} = v_{qs} = 0$ directly represents the bolted fault. In the synchronous frame, the applied voltage would need to be transformed through the rotation angle, and the zero condition would be more complex.
+1. **No stator frame-rotation term.** In the stationary frame, the stator equation is $d\psi_s/dt = v_s - R_s i_s$ without an additional $j\omega\psi_s$ term. The rotation-induced voltage appears only in the rotor equation, which is physically correct. (A zero voltage vector is zero in any orthogonal frame; the choice of frame does not affect the $v_s=0$ boundary condition.)
 
 2. **The stator equation requires no frame-rotation term.** In the stationary frame, $\frac{d\psi_s}{dt} = v_s - R_s i_s$ without any additional $j\omega\psi$ term on the stator side. The rotation-induced voltage appears only in the rotor equation ($j\omega_{re}\psi_r$), which is physically correct.
 
@@ -422,7 +422,7 @@ $$
 L_m = \frac{42.29672}{2\pi\cdot 60} = 112.24\ \text{mH}
 $$
 
-The leakage coefficient $\sigma \approx 0.043$, indicating a loose-coupled machine (typical for a general-purpose induction motor).
+The leakage coefficient is $\sigma \approx 0.043$, indicating typical induction-machine leakage with strong magnetizing coupling and finite leakage flux.
 
 ### 2.4 The Flux-Current Matrix and Its Inverse
 
@@ -701,31 +701,34 @@ This is a system of **three complex differential equations** (or **five real dif
 
 ### 4.5 The Complete System in Real Form
 
-Substituting the flux-current inversion and expanding into real components gives the explicit 5th-order system:
+The electrical subsystem can be written as four real differential equations for the flux components. With $\omega_m$ held constant (speed dynamics disabled), the system is **linear time-invariant (LTI):**
 
 $$
 \frac{d}{dt}
 \begin{bmatrix}
-\psi_{ds} \\ \psi_{qs} \\ \psi_{dr} \\ \psi_{qr} \\ \omega_m
+\psi_{ds} \\ \psi_{qs} \\ \psi_{dr} \\ \psi_{qr}
 \end{bmatrix}
 =
 \begin{bmatrix}
--\frac{R_s L_r}{\Delta} & 0 & \frac{R_s L_m}{\Delta} & 0 & 0 \\
-0 & -\frac{R_s L_r}{\Delta} & 0 & \frac{R_s L_m}{\Delta} & 0 \\
-\frac{R_r L_m}{\Delta} & 0 & -\frac{R_r L_s}{\Delta} & -p\omega_m & 0 \\
-0 & \frac{R_r L_m}{\Delta} & p\omega_m & -\frac{R_r L_s}{\Delta} & 0 \\
-\frac{3p L_r}{2J\Delta}\psi_{qs} & -\frac{3p L_r}{2J\Delta}\psi_{ds} & -\frac{3p L_m}{2J\Delta}\psi_{qs} & \frac{3p L_m}{2J\Delta}\psi_{ds} & 0
+-\frac{R_s L_r}{\Delta} & 0 & \frac{R_s L_m}{\Delta} & 0 \\
+0 & -\frac{R_s L_r}{\Delta} & 0 & \frac{R_s L_m}{\Delta} \\
+\frac{R_r L_m}{\Delta} & 0 & -\frac{R_r L_s}{\Delta} & -p\omega_m \\
+0 & \frac{R_r L_m}{\Delta} & p\omega_m & -\frac{R_r L_s}{\Delta}
 \end{bmatrix}
 \begin{bmatrix}
-\psi_{ds} \\ \psi_{qs} \\ \psi_{dr} \\ \psi_{qr} \\ \omega_m
-\end{bmatrix}
-+
-\begin{bmatrix}
-0 \\ 0 \\ 0 \\ 0 \\ -\frac{T_L}{J}
+\psi_{ds} \\ \psi_{qs} \\ \psi_{dr} \\ \psi_{qr}
 \end{bmatrix}
 $$
 
-This is a **nonlinear** system because the matrix elements in rows 3-4 depend on $\omega_m$ (through $p\omega_m$) and the mechanical equation (row 5) depends on the flux products. However, when $\omega_m$ is held constant (speed dynamics disabled), the system simplifies to a **linear time-invariant (LTI)** 4th-order system in the flux states only.
+When speed dynamics are enabled, the mechanical equation completes the system:
+
+$$
+\frac{d\omega_m}{dt} = \frac{1}{J}\left(T_e - T_L\right),
+\qquad
+T_e = -\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\}
+$$
+
+where $i_s$ is recovered from the flux-current inversion at each step. The coupled system is **nonlinear** because the speed $\omega_m$ appears in the electrical matrix (through $p\omega_m$) and the torque $T_e$ depends on the electrical states.
 
 ### 4.6 State Vector and Implementation
 
@@ -1032,19 +1035,13 @@ The limit $s_{high} \leq 0.8$ prevents the search from entering the plugging reg
 
 ### 8.1 What a Bolted Three-Phase Short Circuit Means
 
-A **bolted three-phase short circuit** (also called a **balanced three-phase fault**) at the motor terminals means:
+A **bolted balanced three-phase terminal short circuit** forces the stator terminal voltage space vector to zero:
 
 $$
-v_{as}(t) = v_{bs}(t) = v_{cs}(t) = 0 \quad \text{for all } t \ge 0
+v_s(t) = 0 \quad \text{for all } t \ge 0
 $$
 
-In the d-q stationary frame, this is:
-
-$$
-v_{ds}(t) = v_{qs}(t) = 0 \quad \implies \quad v_s(t) = 0
-$$
-
-The term "bolted" means the fault has zero impedance - ideal short circuit. In practice, a bolted fault produces the highest possible fault current and torque, making it the conservative case for equipment rating.
+In the stationary d-q frame this is $v_{ds}(t) = v_{qs}(t) = 0$. In a three-wire positive-sequence d-q model, this is equivalent to zero line-to-line voltage at the motor terminals. The term "bolted" means the fault has zero impedance, producing the highest possible fault current and torque (conservative case for equipment rating). Whether the short point is grounded is not material unless zero-sequence paths are explicitly modeled.
 
 ### 8.2 The Fault as an Initial-Value Problem
 
@@ -1082,23 +1079,25 @@ $$
 \psi_s(0^+) = \psi_s(0^-)
 $$
 
-### 8.4 Why Current Can Change Discontinuously but Flux Cannot
+### 8.4 Why Flux and Current Are Continuous but Their Derivatives Change
 
-While flux is continuous, **current can change discontinuously**. This is because current depends on both fluxes ($i_s = (L_r \psi_s - L_m \psi_r) / \Delta$), and while $\psi_s$ and $\psi_r$ are individually continuous, their relationship may require an instantaneous change in current to satisfy the new voltage equation.
+Flux linkages are continuous at fault inception because an instantaneous flux jump would require infinite voltage (Faraday's law).
 
-At $t = 0^+$, the stator equation becomes:
-
-$$
-\frac{d\psi_s}{dt}\bigg|_{t=0^+} = -R_s i_s(0^+)
-$$
-
-The current $i_s(0^+)$ is determined by the continuous fluxes:
+In this linear model, the inductance matrix does not change at the instant of fault. The currents are algebraic functions of the continuous flux linkages:
 
 $$
-i_s(0^+) = \frac{L_r \psi_{s0} - L_m \psi_{r0}}{\Delta}
+i_s(0^+) = \frac{L_r \psi_{s0} - L_m \psi_{r0}}{\Delta}, \qquad
+i_r(0^+) = \frac{-L_m \psi_{s0} + L_s \psi_{r0}}{\Delta}
 $$
 
-This generally differs from the pre-fault current $I_{s0}$, resulting in an instantaneous jump in the stator current at $t = 0$. This jump is physically realizable because the circuit inductance limits the rate of change of current, not the current itself - and the stator current is not a state variable in the flux-linkage formulation.
+Since $\psi_s$, $\psi_r$, and all inductances are unchanged at $t=0$, the currents $i_s$ and $i_r$ are also **continuous** across the fault:
+
+$$
+i_s(0^-) = I_{s0} = i_s(0^+), \qquad
+i_r(0^-) = I_{r0} = i_r(0^+)
+$$
+
+What changes **discontinuously** is the applied voltage boundary condition ($v_s$ goes from $V_{s0}$ to $0$). This causes the **derivatives** $d\psi_s/dt$, $d\psi_r/dt$ to jump at $t=0$, but the fluxes and currents themselves remain continuous. The distinction matters: current continuity follows from flux continuity in a constant-parameter linear model.
 
 ---
 
@@ -1145,16 +1144,9 @@ $$
 
 The DC component in $\psi_s$ produces a DC component in $i_s$ that decays as $e^{-t/T_{s,dc}}$. This is what the **quick calculation**'s `DC_OFFSET_FACTOR` attempts to approximate - but the d-q model captures it exactly through the state equations.
 
-### 9.3 Relationship Between Inception Angle and DC Offset Magnitude
+### 9.3 DC Offset Distribution Among Phases
 
-The magnitude of the DC offset depends on the fault inception angle $\theta_0$ because $\psi_{s0}$ depends on $\theta_0$ through $V_{s0} = \sqrt{2} V_{ph} e^{j\theta_0}$.
-
-Specifically:
-- When $\theta_0$ aligns with the maximum of the $\alpha$-axis voltage, the initial flux $\psi_{s0}$ is oriented primarily along the $\alpha$-axis.
-- The DC component in the $\alpha$-axis current is proportional to $\psi_{s0}^\alpha$, and similarly for $\beta$.
-- The **peak DC offset** occurs when $\theta_0$ places the initial flux vector perpendicular to the eventual steady-state flux direction (which is zero for a short circuit).
-
-For a three-phase balanced fault, the DC offset magnitude in each phase varies with $\theta_0$, but the **total** DC energy in the three phases is constant. This is why the peak absolute torque is angle-invariant (see [Section 10.5](#105-why-peak-t-is-nearly-angle-invariant-for-balanced-faults)).
+The fault inception angle $\theta_0$ determines how the DC offset is distributed among the three physical phases, but it does not affect the total magnetic energy stored at the instant of fault. For the ideal balanced model, the initial flux and current space vectors all rotate together by $e^{j\theta_0}$, and the scalar torque is invariant to this common rotation (see [Section 10.5](#105-why-torque-is-exactly-angle-invariant-for-the-ideal-balanced-model)).
 
 ### 9.4 Decay of the DC Component
 
@@ -1250,84 +1242,54 @@ $$
 T_{nom}(\theta_0) = \text{constant}
 $$
 
-### 10.3 Effect on the Transient Waveform
+### 10.3 No Effect on Electromagnetic Torque in the Ideal Balanced Model
 
-While the initial conditions' magnitudes are angle-independent, the **orientation** of the initial flux vectors relative to the stationary frame axes determines how the DC offset is distributed between the $d$ and $q$ axes.
+In the ideal balanced model, the entire electromagnetic torque waveform is **exactly invariant** to $\theta_0$, not merely the peak absolute value. The reason is rotational symmetry: multiplying the pre-fault voltage by $e^{j\theta_0}$ rotates all initial flux and current space vectors by the same factor, and this common rotation cancels in the torque expression $T_e = -(3/2)p\,\operatorname{Im}\{\psi_s i_s^*\}$.
 
-The DC offset in each axis is proportional to $\cos\theta_0$ (for $d$-axis) and $\sin\theta_0$ (for $q$-axis). The total DC offset energy is:
+The DC offset does redistribute among the three physical phases as $\theta_0$ varies, but the total torque - a scalar invariant under common rotation of all space vectors - is unchanged.
 
-$$
-|\psi_s^{dc}|^2 \propto \cos^2\theta_0 + \sin^2\theta_0 = 1
-$$
+### 10.4 Periodicity: Why 180 deg
 
-This is angle-invariant - the DC offset magnitude is constant, but it shifts between the two axes as $\theta_0$ varies.
+The transformation $abc \to dq$ involves $\cos\theta_0$ and $\sin\theta_0$ terms. Replacing $\theta_0$ by $\theta_0 + 180^\circ$ negates the pre-fault voltage $V_{s0}$, which flips the signs of $I_{s0}$, $I_{r0}$, $\psi_{s0}$, $\psi_{r0}$. However, since torque depends on products of these quantities (e.g., $\psi_{ds} i_{qs}$), a simultaneous sign flip of all quantities leaves the torque unchanged. Therefore, the torque behaviour is $180^\circ$-periodic in $\theta_0$.
 
-The torque waveform depends on the interaction of the DC offset with the AC components. As $\theta_0$ changes:
-- The **positive peak** torque varies (higher when the DC offset aligns constructively with the AC component).
-- The **negative peak** torque varies (higher when the DC offset aligns destructively).
-- The **peak absolute torque** $\max(|T_e|)$ remains nearly constant because the total transient energy is angle-invariant.
+### 10.5 Why Torque Is Exactly Angle-Invariant for the Ideal Balanced Model
 
-### 10.4 Periodicity: Why 180
+For the ideal balanced, linear, symmetric three-phase terminal short-circuit model, the electromagnetic torque waveform is **exactly invariant** to the fault inception angle $\theta_0$, not merely the peak absolute value. The proof follows from rotational symmetry.
 
-The transformation $abc \to dq$ involves $\cos\theta_0$ and $\sin\theta_0$ terms. Replacing $\theta_0$ by $\theta_0 + 180^\circ$:
+**Proof:** The initial condition is $V_{s0} = \sqrt{2} V_{ph} e^{j\theta_0}$. The pre-fault system is linear, so $I_{s0}$, $I_{r0}$, $\psi_{s0}$, and $\psi_{r0}$ are each proportional to $e^{j\theta_0}$. At every subsequent time step, the ODE system is rotationally symmetric: if $\{\psi_s(t), \psi_r(t)\}$ is a solution starting from $\theta_0 = 0$, then $\{e^{j\theta_0}\psi_s(t), e^{j\theta_0}\psi_r(t)\}$ is the solution starting from $\theta_0$. The torque is:
 
 $$
-\cos(\theta_0 + 180^\circ) = -\cos\theta_0
+T_e = -\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\}
+$$
+
+where $i_s = (L_r \psi_s - L_m \psi_r)/\Delta$. Under the common rotation:
+
+$$
+\psi_s' = e^{j\theta_0}\psi_s, \quad \psi_r' = e^{j\theta_0}\psi_r, \quad
+i_s' = e^{j\theta_0}i_s, \quad i_r' = e^{j\theta_0}i_r
 $$
 
 $$
-\sin(\theta_0 + 180^\circ) = -\sin\theta_0
+T_e' = -\frac{3}{2}p\,\operatorname{Im}\{\psi_s' i_s'^*\} = -\frac{3}{2}p\,\operatorname{Im}\{e^{j\theta_0}\psi_s \cdot (e^{j\theta_0}i_s)^*\} = -\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\} = T_e
 $$
 
-This negates the pre-fault voltage $V_{s0}$, which flips the signs of $I_{s0}$, $I_{r0}$, $\psi_{s0}$, $\psi_{r0}$. However, **the magnitudes remain the same**. Since torque depends on products of quantities (e.g., $\psi_{ds} i_{qs}$), a simultaneous sign flip of all quantities leaves the torque unchanged:
+Therefore the full torque trajectory $T_e(t)$ is identical for all $\theta_0$. The phase currents and $d$/$q$ axis components redistribute with $\theta_0$, but the electromagnetic torque does not.
 
-$$
-T_e(\theta_0 + 180^\circ) = T_e(\theta_0)
-$$
+> **When angle dependence can appear:** The invariance breaks if the model includes unbalanced faults, phase-asymmetric winding parameters, magnetic saturation with spatial saliency, non-sinusoidal winding distribution, zero-sequence paths, or supply/network asymmetry. The angle sweep in `scim_calc/sweep.py` serves as a validation routine confirming this invariance (and as infrastructure for future extensions).
 
-Therefore, the torque behaviour is $180^\circ$-periodic in $\theta_0$.
 
-### 10.5 Why Peak |T| Is Nearly Angle-Invariant for Balanced Faults
+### 10.6 Why the Quick Calculation Appears to Show Asymmetry
 
-This is a classical result for balanced three-phase faults on induction machines. The rigorous explanation involves the fact that the total magnetic energy stored in the machine at the instant of the fault is:
+In the d-q model, the torque waveform is angle-invariant for the ideal balanced case. However, the **quick calculation** produces a symmetric waveform (equal positive and negative peaks) because it models only a single-frequency oscillation. The difference between the d-q model and the quick calculation (the latter underestimating the negative peak by ~10-11%) is **not** due to the inception angle, but due to the quick method's inability to capture the full multi-component flux interaction - this difference exists at all $\theta_0$ equally.
 
-$$
-W_{mag}(0) = \frac{1}{2} \left( \psi_{s0}^* i_{s0} + \psi_{r0}^* i_{r0} \right)
-$$
+For small slip (near synchronous speed), $(1-s)\omega_s \approx \omega_s$, so the torque components in the d-q model have nearly the same frequency, producing a waveform that appears closer to the quick calculation's single-frequency approximation. For larger slip, the frequency separation increases, and the d-q waveform's multi-component nature becomes more apparent.
 
-This energy is independent of $\theta_0$ (because $|\psi_{s0}|$, $|\psi_{r0}|$, $|i_{s0}|$, $|i_{r0}|$, and their relative phase angles are all $\theta_0$-invariant). The transient torque is the time derivative of this energy (power) divided by speed:
-
-$$
-T_e(t) \propto \frac{dW_{mag}}{dt} \cdot \frac{1}{\omega_m}
-$$
-
-The peak value of $|T_e|$ is therefore determined by the total available magnetic energy, which is $\theta_0$-invariant.
-
-For **unbalanced faults**, this invariance does not hold - the zero-sequence and negative-sequence components introduce additional energy terms that depend on $\theta_0$.
-
-### 10.6 Asymmetry Mechanism
-
-While the peak absolute torque is invariant, the **distribution** between positive and negative peaks varies with $\theta_0$. This is because the DC offset component adds constructively to one polarity and destructively to the other.
-
-The torque from the DC-offset interaction is approximately:
-
-$$
-T_{dc}(t) \propto \cos(\omega_s t + \theta_0)
-$$
-
-The torque from the main AC component (approximated by the quick calculation) is:
-
-$$
-T_{ac}(t) \propto \cos((1-s)\omega_s t + \phi)
-$$
-
-The sum $T_e = T_{ac} + T_{dc}$ is asymmetric because the two cosine terms have different frequencies. When the two components align in phase, they produce a large peak; when they oppose, the net peak is smaller. The alignment depends on $\theta_0$ and $s$.
-
-For small $s$ (near synchronous speed), $(1-s)\omega_s \approx \omega_s$, so the two components have nearly the same frequency. The asymmetry is then small. For larger $s$ (during motor starting or heavy load), the frequency difference increases, and the asymmetry becomes more pronounced.
 
 ### 10.7 Angle Sweep Implementation
 
-The `scim_calc/sweep.py` module implements a two-phase search to characterize the torque as a function of $\theta_0$:
+For the ideal balanced model, the torque is exactly invariant to $\theta_0$, so the angle sweep in `scim_calc/sweep.py` functions primarily as a **validation routine** - confirming that the simulation produces identical torque traces (within floating-point tolerance) for all inception angles. It also serves as infrastructure for future extensions where angle dependence may appear (unbalanced faults, saturation with saliency, etc.).
+
+The sweep uses a two-phase approach for efficiency:
 
 **Phase 1 - Coarse sweep:**
 - Range: $0^\circ$ to $180^\circ$ (the $180^\circ$ periodicity).
@@ -1457,13 +1419,13 @@ $$
 
 The stability region boundary is $|R(z)| = 1$. For real $\lambda$ (purely dissipative modes), the stability interval is approximately $[-2.78, 0]$. For complex $\lambda$ (oscillatory modes), the region extends further into the left half-plane.
 
-For this system, the largest eigenvalue magnitude is approximately $1/T_{s,dc} \approx 12\ \text{s}^{-1}$. With a step size of $h = 40\ \mu\text{s}$:
+The RK4 stability check must use the **full complex eigenvalues** of the linearized 4-state electrical system (not just the damping rates). For the test motor, the eigenvalues are complex conjugates with magnitudes dominated by $\omega_s = 2\pi \cdot 60 \approx 377$ rad/s. With a step size of $h = 40\ \mu\text{s}$:
 
 $$
-|z| = |\lambda| h \approx 12 \times 4 \times 10^{-5} = 4.8 \times 10^{-4}
+|z| = |\lambda| h \approx 377 \times 4 \times 10^{-5} = 0.015
 $$
 
-This is well within the stability region ($|z| \ll 2.78$), so the integration is numerically stable.
+This is well within the stability region ($|z| \ll 2.78$), so the integration is numerically stable with a comfortable margin.
 
 ### 11.6 Step Size Selection for This Application
 
@@ -1479,11 +1441,11 @@ $$
 h = \frac{0.2}{4999} \approx 4.0 \times 10^{-5}\ \text{s} = 40\ \mu\text{s}
 $$
 
-This step size satisfies three criteria:
+This step size satisfies the following criteria:
 
-1. **Accuracy:** With 5000 steps over 0.2 s, the local truncation error is $\mathcal{O}(h^5) \approx \mathcal{O}(10^{-22})$, far below machine precision for double-precision floating point ($\approx 10^{-16}$). The actual error is dominated by floating-point round-off, not truncation.
+1. **Expected accuracy:** With $h \approx 40\ \mu\text{s}$, RK4 is expected to provide high accuracy for the 60 Hz electrical transient and the dominant exponential decays. The 4th-order convergence rate means halving the step size reduces the global error by a factor of 16. Accuracy should be verified using a step-halving convergence test (see Section 11.8).
 
-2. **Stability:** As shown above, $|\lambda| h \approx 4.8 \times 10^{-4}$, well within the stability region.
+2. **Stability:** As shown above, $|\lambda| h \approx 0.015$, well within the RK4 stability region.
 
 3. **Waveform resolution:** The 60 Hz fundamental has a period of $16.7$ ms. With $h = 40\ \mu$s, there are $\approx 417$ steps per cycle, providing excellent resolution of the torque waveform.
 
@@ -1727,14 +1689,15 @@ This plot provides a visual comparison of the two methods' waveforms. The asymme
 
 ### 15.2 Quantified Differences for the Test Motor
 
-For the 2000 HP, 4 kV, 60 Hz, 2-pole test motor at $\theta_0 = 0^\circ$:
+For the 2000 HP, 4 kV, 60 Hz, 2-pole test motor (torque is invariant to $\theta_0$ for the ideal balanced model - see Section 10.5):
 
 | Metric | Quick | d-q | Difference |
 |---|---|---|---|
 | $T_{nom}$ | 3989 N·m | 3989 N·m | 0% |
 | Positive peak | $+305.7\%\ T_n$ | $+299.6\%\ T_n$ | $+2.0\%$ |
 | Negative peak | $-376.3\%\ T_n$ | $-416.8\%\ T_n$ | **$-10.8\%$** |
-| Peak $|T|$ | $376.3\%\ T_n$ | $416.8\%\ T_n$ | **$-9.7\%$** |
+| Peak $|T|$ | $376.3\%\ T_n$ | $416.8\%\ T_n$ | **$-10.8\%$** |
+| Angle dependence | None (symmetric waveform) | None (exactly invariant for balanced model) | — |
 | RMS difference (full) | - | - | $12.8\%\ T_n$ |
 | RMS diff ($t < 50$ ms) | - | - | $23.7\%\ T_n$ |
 | RMS diff ($t > 100$ ms) | - | - | $2.5\%\ T_n$ |
@@ -1742,17 +1705,15 @@ For the 2000 HP, 4 kV, 60 Hz, 2-pole test motor at $\theta_0 = 0^\circ$:
 
 The quick calculation underestimates the worst-case negative torque by **10.8%** relative to the d-q model. This is a significant difference for equipment rating studies, where the worst-case torque determines shaft stress and coupling requirements.
 
-### 15.3 Component-by-Component Spectral Analysis
+### 15.3 Spectral Analysis (Recommended FFT Validation)
 
-The d-q torque can be decomposed into three main spectral components:
+The d-q torque waveform contains multiple frequency components arising from the interaction of stator and rotor flux transients. The verbal labels commonly used in the literature include:
 
-1. **Rotor-frequency component** at $(1-s)\omega_s$ ($\approx 374$ rad/s for the test motor): This is the dominant component and the only one captured by the quick calculation. It arises from the interaction of the fundamental-frequency stator and rotor currents.
+- Components near the **electrical fundamental** $\omega_s$ (arising from stator-transient/rotor-flux interaction).
+- Components near the **rotor electrical speed** $(1-s)\omega_s$ (from fundamental stator/rotor current interaction - this is the dominant component captured approximately by the quick calculation).
+- Components near **slip frequency** $s\omega_s$ and its multiples.
 
-2. **Line-frequency component** at $\omega_s$ ($377$ rad/s): This component arises from the interaction of the DC offset in the stator current with the fundamental-frequency rotor flux. It is not captured by the quick calculation (unless $DC\_OFFSET\_FACTOR > 0$, which adds a same-frequency term, not a separate line-frequency component).
-
-3. **Slip-frequency component** at $2s\omega_s$ ($\approx 5.9$ rad/s): A small-amplitude component arising from second-order interactions. It is negligible for small slip.
-
-The quick calculation models only component (1), and with a single time constant approximation. The d-q model captures all three components and their interactions naturally.
+**Note:** These labels should be verified by FFT analysis of the simulated torque waveform rather than assumed. The frequency content depends on the specific motor parameters and operating point. A recommended validation is to compute the FFT of $T_{fault}(t)$ and identify the dominant peaks, then correlate them with the known modal frequencies of the system (see eigenvalue analysis in Section 5).
 
 ### 15.4 When Each Method Is Appropriate
 
@@ -1820,12 +1781,9 @@ For worst-case analysis, $J = \infty$ (constant speed) is the conservative choic
 
 ### 16.6 Fault Inception Angle theta0
 
-As analyzed in [Section 10](#10-the-fault-inception-angle), $\theta_0$ affects the **distribution** of the torque between positive and negative peaks but not the **peak absolute magnitude** for balanced faults.
+For the ideal balanced model, $\theta_0$ has **no effect** on the electromagnetic torque waveform - the entire trace $T_e(t)$ is exactly invariant. The sweep results confirm this: the peak absolute torque is $416.84\%\ T_n$ at every angle to within floating-point precision. The invariance follows from the rotational symmetry of the model (see [Section 10.5](#105-why-torque-is-exactly-angle-invariant-for-the-ideal-balanced-model)).
 
-The range of $\theta_0$ produces:
-- Positive peak: varies between $\approx 290\%\ T_n$ and $\approx 310\%\ T_n$.
-- Negative peak: varies between $\approx -390\%\ T_n$ and $\approx -417\%\ T_n$.
-- Peak $|T|$: $416.8\%\ T_n \pm 0.1\%$ (essentially constant).
+Angle dependence may appear in extended models that include unbalanced faults, saturation with spatial saliency, or non-sinusoidal winding distributions.
 
 ---
 
@@ -1855,13 +1813,13 @@ The range of $\theta_0$ produces:
 
 ### 17.2 Balanced Fault Only
 
-**Assumption:** The fault is a balanced three-phase bolted short circuit - all three phases are shorted to each other and to ground through zero impedance.
+**Assumption:** The fault is a balanced three-phase bolted short circuit at the motor terminals. In the positive-sequence d-q model, this is equivalent to zero line-to-line voltage at the terminals: the stator voltage space vector is forced to zero. Whether the short point is grounded is not material unless zero-sequence paths are explicitly modelled.
 
 **Reality:** Power system faults can be:
-- **Line-to-line (L-L):** Two phases shorted together.
-- **Line-to-ground (L-G):** One phase shorted to ground.
-- **Double line-to-ground (L-L-G):** Two phases shorted to ground.
-- **Three-phase (L-L-L):** All three phases shorted (this is the modelled case).
+- **Line-to-line (L-L):** Two phases shorted together (not modelled).
+- **Line-to-ground (L-G):** One phase shorted (not modelled).
+- **Double line-to-ground (L-L-G):** Two phases shorted (not modelled).
+- **Three-phase (L-L-L):** All three phases shorted - this is the modelled case.
 
 **Why not implemented:** Unbalanced faults require sequence-component analysis or a full $abc$-frame model. The d-q model in the stationary frame implicitly assumes balanced operation. Extending to unbalanced faults would require either:
 - A full three-phase ($abc$) model with six coupled differential equations (three stator, three rotor).
@@ -1895,11 +1853,11 @@ This increases the model order by two (two additional flux states). The paramete
 
 ### 17.5 No Skin Effect
 
-**Assumption:** Current distribution in the rotor bars is uniform.
+**Assumption:** Current distribution in the rotor bars is uniform (frequency-independent resistance and leakage).
 
-**Reality:** At the slip frequency $s\omega_s$, rotor current tends to concentrate at the top of deep rotor bars (skin effect). This increases the effective rotor resistance at starting frequencies ($s \approx 1$) but has little effect at running frequencies ($s \ll 0.1$).
+**Reality:** At high frequencies, rotor current tends to concentrate at the top of deep rotor bars (skin effect), increasing effective resistance and reducing effective leakage inductance. During a short-circuit transient, the rotor current contains components at multiple frequencies, including components at near-synchronous frequency arising from the stator DC offset (which is stationary relative to the stator and therefore seen by the rotor at approximately rotor electrical speed, near line frequency for a near-synchronous 2-pole motor).
 
-**Effect:** For the short-circuit transient, the rotor frequency is close to $s\omega_s \approx 0.008 \times 377 \approx 3$ rad/s, which is low enough that skin effect is negligible.
+**Effect:** The single-cage constant-parameter model may underestimate damping of high-frequency rotor current components. For deep-bar or double-cage rotors, the frequency-dependent rotor resistance and leakage may affect the early transient torque. The model should therefore be treated as an approximation for such machines.
 
 ### 17.6 Ideal Voltage Source Behind the Fault
 

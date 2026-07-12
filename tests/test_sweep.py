@@ -1,9 +1,9 @@
 """
 Test the angle-sweep module.
 
-Verifies that the two-phase coarse/refine sweep produces sensible results:
-nominal torque matches, asymmetric peaks are detected, and the peak absolute
-torque is nearly invariant with inception angle.
+For the ideal balanced model, the torque is exactly invariant to the
+fault inception angle. The sweep should confirm this: peak absolute
+torque should be identical at every angle (within floating-point tolerance).
 """
 
 import numpy as np
@@ -29,8 +29,8 @@ def test_sweep_peaks_reasonable(motor_params):
         coarse_step=10.0, refine_width=2.0, refine_step=1.0,
     )
     assert abs(s["worst_neg_pct"]) > s["worst_pos_pct"]
-    assert s["worst_neg_pct"] < -400.0  # >400% negative
-    assert s["worst_pos_pct"] < 350.0   # <350% positive
+    assert s["worst_neg_pct"] < -400.0
+    assert s["worst_pos_pct"] < 350.0
 
 
 def test_sweep_angle_range(motor_params):
@@ -44,12 +44,15 @@ def test_sweep_angle_range(motor_params):
     assert len(s["angles"]) > 10
 
 
-def test_sweep_peak_abs_uniform(motor_params):
-    """The peak absolute torque should be nearly constant across all inception
-    angles (variation < 0.1 pu of T_nom)."""
+def test_sweep_peak_abs_exactly_invariant(motor_params):
+    """The peak absolute torque should be invariant across all angles.
+    The sweep uses reduced temporal resolution for the coarse phase, which
+    can cause tiny variations in captured peak values (waveform undersampling).
+    These should be many orders of magnitude below engineering significance."""
     s = angle_sweep(
         motor_params, slip=motor_params["slip"],
         coarse_step=10.0, refine_width=2.0, refine_step=1.0,
     )
-    variation = (np.max(s["abs_peaks"]) - np.min(s["abs_peaks"])) / s["T_nom"]
-    assert variation < 0.1
+    variation_pct = (np.max(s["abs_peaks"]) - np.min(s["abs_peaks"])) / s["T_nom"] * 100.0
+    # Variation should be far below 0.01% of T_nom
+    assert variation_pct < 0.01, f"Variation={variation_pct:.4f}% of T_nom"
