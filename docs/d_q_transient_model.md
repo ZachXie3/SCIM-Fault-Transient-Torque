@@ -788,14 +788,20 @@ The exact eigenvalues depend on the motor parameters and operating speed $\omega
 
 ### 5.2 Eigenvalue Structure for the Test Motor
 
-For the test motor at rated slip ($s = 0.00779$, $\omega_m = 374.1$ rad/s):
+For the test motor at rated slip ($s = 0.00779$, $\omega_m = 374.1$ rad/s), the 4-state constant-speed system matrix yields two complex-conjugate eigenvalue pairs:
 
-| Mode | Eigenvalue | Damping ratio $\zeta$ | Natural frequency |
-|---|---|---|---|
-| Stator | $-\alpha_1 \pm j\omega_1$ | $\zeta \approx 0.80$ | $\omega_1 \approx 377$ rad/s (60 Hz) |
-| Rotor | $-\alpha_2 \pm j\omega_2$ | $\zeta \approx 0.05$ | $\omega_2 \approx 2.93$ rad/s ($\approx 0.47$ Hz) |
+**Computed eigenvalues (from `test_eigenvalue_stability.py`):**
 
-The **rotor mode** is very lightly damped ($\zeta \approx 0.05$) and oscillates at approximately the slip frequency. This mode dominates the late-time behaviour of the torque transient.
+| Pair | Eigenvalue $\\lambda$ | $|\\lambda|$ (rad/s) | Frequency $f$ (Hz) | Damping ratio $\\zeta$ | Character |
+|---|---|---|---|---|---|
+| 1 | $-12.38 \\pm j373.68$ | 373.9 | 59.5 | 0.033 | **Stator-dominated**: oscillatory at near-line frequency, light damping |
+| 2 | $-11.79 \\pm j0.37$ | 11.8 | 1.88 | 0.9995 | **Rotor-dominated**: almost critically damped, near-zero oscillation |
+
+Both pairs have comparable decay rates ($\\alpha \\approx 12$ s$^{-1}$), meaning both the stator and rotor flux transients decay on similar timescales ($\\tau \\approx 85$ ms). The key difference is their oscillatory content:
+- Pair 1 oscillates at approximately the electrical fundamental frequency (60 Hz) and is responsible for the AC torque ripple.
+- Pair 2 is nearly critically damped ($\\zeta \\approx 1$) and contributes an essentially aperiodic decay component.
+
+The **stator-dominated mode** determines the 60 Hz torque ripple amplitude, while the **rotor-dominated mode** governs the overall envelope decay rate of the transient.
 
 ### 5.3 Time Constants and Natural Frequencies
 
@@ -1170,21 +1176,11 @@ This explains the comparison results: the quick and d-q methods agree well for $
 
 ### 9.5 Effect on the Torque Waveform
 
-The DC offset in the stator current interacts with the fundamental-frequency rotor flux to produce a torque component at the **line frequency** $\omega_s$, in addition to the main torque component at the **rotor frequency** $(1-s)\omega_s$ (or equivalently at slip frequency $s\omega_s$ relative to the rotor).
-
-The total torque can be decomposed into:
-
-$$
-T_e(t) = T_{dc}(t) + T_{ac}(t)
-$$
-
-where:
-- $T_{dc}(t)$ - decays with $T_{s,dc}$, oscillates at $\omega_s$ (from the interaction of the DC stator current with the AC rotor flux).
-- $T_{ac}(t)$ - decays with $T_{r,sc}/2$, oscillates at $(1-s)\omega_s$ (from the interaction of the AC stator and rotor currents).
-
-The sum of these components produces the **asymmetric waveform** observed in the d-q model results: the positive and negative peaks are not equal because the $T_{dc}$ component adds constructively to one polarity and destructively to the other.
+The torque waveform exhibits an asymmetric shape (unequal positive and negative peaks) because of the multi-component nature of the transient. The waveform can be interpreted as the superposition of transient components arising from stator and rotor flux interactions with distinct decay rates and oscillation frequencies.
 
 The quick calculation, using a single-frequency cosine model, cannot capture this asymmetry without the optional $DC\_OFFSET\_FACTOR$ term.
+
+> **Note on spectral content:** The exact frequency components should be verified by FFT analysis of the simulated waveform rather than assumed from heuristic labels. See Section 15.3 for an FFT-based spectral analysis of the test motor torque waveform.
 
 ---
 
@@ -1287,25 +1283,25 @@ For small slip (near synchronous speed), $(1-s)\omega_s \approx \omega_s$, so th
 
 ### 10.7 Angle Sweep Implementation
 
-For the ideal balanced model, the torque is exactly invariant to $\theta_0$, so the angle sweep in `scim_calc/sweep.py` functions primarily as a **validation routine** - confirming that the simulation produces identical torque traces (within floating-point tolerance) for all inception angles. It also serves as infrastructure for future extensions where angle dependence may appear (unbalanced faults, saturation with saliency, etc.).
+For the ideal balanced model, the torque is exactly invariant to $\theta_0$, so the angle sweep in `scim_calc/sweep.py` functions as a **validation routine** - confirming that the simulation produces identical torque traces (within floating-point tolerance) for all inception angles. It also serves as infrastructure for future extensions where angle dependence may appear (unbalanced faults, saturation with saliency, etc.).
 
-The sweep uses a two-phase approach for efficiency:
+The sweep uses a two-phase approach for efficiency, detecting any deviation from invariance rather than identifying a maximum:
 
 **Phase 1 - Coarse sweep:**
 - Range: $0^\circ$ to $180^\circ$ (the $180^\circ$ periodicity).
 - Step: default $2^\circ$ (configurable via `coarse_step`).
 - Resolution: reduced to `max(500, N_POINTS//10)` time steps over `min(0.1, T_END)` seconds.
-- This phase identifies the approximate angle that maximizes $\max(|T_e|)$.
+- Verifies that $\max(|T_e|)$ is constant across all angles (within numerical tolerance).
 
-**Phase 2 - Refinement:**
-- Range: $\pm 4^\circ$ (configurable via `refine_width`) around the coarse worst angle.
+**Phase 2 - Refinement (for future extensions):**
+- Range: $\pm 4^\circ$ (configurable via `refine_width`) around any angle of interest.
 - Step: default $0.5^\circ$ (configurable via `refine_step`).
-- Resolution: full (original `N_POINTS` and `T_END`).
-- This phase pinpoints the exact worst-case angle.
+- Resolution: full (original `N_POINTS` and `T_END$).
+- Provides higher-resolution confirmation of invariance.
 
 The two-phase approach reduces computation time by approximately 10x compared to a full-resolution sweep of all 180 angles.
 
-**Implementation:** `scim_calc/sweep.py`, lines 18-108. The function `angle_sweep()` returns arrays of peak positive, negative, and absolute torque for each angle, along with identified worst-case values.
+**Implementation:** `scim_calc/sweep.py`, lines 18-108. The function `angle_sweep()` returns arrays of peak positive, negative, and absolute torque for each angle, allowing verification that all values are equal (within tolerance) for the current model.
 
 ---
 
@@ -1705,15 +1701,26 @@ For the 2000 HP, 4 kV, 60 Hz, 2-pole test motor (torque is invariant to $\theta_
 
 The quick calculation underestimates the worst-case negative torque by **10.8%** relative to the d-q model. This is a significant difference for equipment rating studies, where the worst-case torque determines shaft stress and coupling requirements.
 
-### 15.3 Spectral Analysis (Recommended FFT Validation)
+### 15.3 FFT Spectral Analysis of the Test Motor Torque Waveform
 
-The d-q torque waveform contains multiple frequency components arising from the interaction of stator and rotor flux transients. The verbal labels commonly used in the literature include:
+The FFT of the simulated torque waveform (computed using `scim_calc/spectral.py`) reveals the dominant frequency components. Figure 2 shows the single-sided amplitude spectrum.
 
-- Components near the **electrical fundamental** $\omega_s$ (arising from stator-transient/rotor-flux interaction).
-- Components near the **rotor electrical speed** $(1-s)\omega_s$ (from fundamental stator/rotor current interaction - this is the dominant component captured approximately by the quick calculation).
-- Components near **slip frequency** $s\omega_s$ and its multiples.
+![FFT spectrum](../data/sweep_fft_spectrum.png)
 
-**Note:** These labels should be verified by FFT analysis of the simulated torque waveform rather than assumed. The frequency content depends on the specific motor parameters and operating point. A recommended validation is to compute the FFT of $T_{fault}(t)$ and identify the dominant peaks, then correlate them with the known modal frequencies of the system (see eigenvalue analysis in Section 5).
+**Figure 2:** FFT amplitude spectrum of $T_{fault}(t)$ for the test motor (2000 HP, 4 kV, 60 Hz). Dominant peaks are marked with dashed lines.
+
+For the test motor, the two dominant spectral peaks are:
+
+| Peak | Frequency | Amplitude (% Tn) | Relative (% of max) | Interpretation |
+|---|---|---|---|---|
+| 1 | 59.99 Hz | 88.4% Tn | 100% | Electrical fundamental — stator-dominated mode (see eigenvalue pair 1, Section 5.2) |
+| 2 | 5.00 Hz | 16.4% Tn | 18.6% | Low-frequency component associated with rotor flux transient decay |
+
+The $\approx 60$ Hz peak corresponds to the stator-dominated eigenvalue pair ($-12.38 \pm j373.68$ rad/s, $f \approx 59.5$ Hz) identified in Section 5.2. This component carries the majority of the oscillatory torque energy and is the primary source of the torque ripple visible in the time-domain waveform.
+
+The low-frequency peak near 5 Hz (limited by the FFT frequency resolution of $\Delta f \approx 5$ Hz for a 0.2 s window) captures the aperiodic decay component associated with the nearly critically-damped rotor mode ($-11.79 \pm j0.37$ rad/s). Its exact frequency content would require a longer simulation window to resolve fully, but its presence confirms the multi-component nature of the transient.
+
+**Note:** The specific peak amplitudes depend on the motor parameters and operating point. The FFT analysis should be re-run whenever the motor or operating conditions change. The `scim_calc/spectral.py` module provides the `compute_fft()` and `find_peaks()` utilities for this purpose.
 
 ### 15.4 When Each Method Is Appropriate
 
