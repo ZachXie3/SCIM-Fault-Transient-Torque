@@ -1,0 +1,12 @@
+{
+  "T_nom": 3988.7244475678817,
+  "worst_angle_deg": 10.0,
+  "worst_abs_Nm": 16626.582688351198,
+  "worst_abs_pct": 416.8395913758653,
+  "worst_neg_angle": 10.0,
+  "worst_neg_Nm": -16626.582688351198,
+  "worst_neg_pct": -416.8395913758653,
+  "worst_pos_angle": 0.0,
+  "worst_pos_Nm": 11950.9243025642,
+  "worst_pos_pct": 299.6176963252314
+}
