@@ -1232,7 +1232,7 @@ i_s' = e^{j\theta_0}i_s, \quad i_r' = e^{j\theta_0}i_r
 $$
 
 $$
-T_e' = -\frac{3}{2}p\,Im\{\psi_s' i_s'^*\} = -\frac{3}{2}p\,Im\{e^{j\theta_0}\psi_s \cdot (e^{j\theta_0}i_s)^*\} = -\frac{3}{2}p\,Im\{\psi_s i_s^*\} = T_e
+T_e' = -\frac{3}{2}p\,\operatorname{Im}\{\,\psi_s'\,{i_s'}^{*}\,\} = -\frac{3}{2}p\,\operatorname{Im}\{\,e^{j\theta_0}\psi_s \cdot (e^{j\theta_0}i_s)^*\,\} = -\frac{3}{2}p\,\operatorname{Im}\{\,\psi_s i_s^*\,\} = T_e
 $$
 
 Therefore the full torque trajectory $T_e(t)$ is identical for all $\theta_0$. The phase currents and $d$/$q$ axis components redistribute with $\theta_0$, but the electromagnetic torque does not.
@@ -1294,7 +1294,7 @@ $$
 c_1 & a_{11} & a_{12} & \cdots & a_{1s} \\
 c_2 & a_{21} & a_{22} & \cdots & a_{2s} \\
 \vdots & \vdots & \vdots & \ddots & \vdots \\
-c_s & a_{s1} & a_{s2} & \cdots & a_{ss} \\ \hline
+c_s & a_{s1} & a_{s2} & \cdots & a_{ss} \\ \hdashline
 & b_1 & b_2 & \cdots & b_s
 \end{array}
 $$
@@ -1318,7 +1318,7 @@ $$
 0 & 0 & 0 & 0 & 0 \\
 \frac{1}{2} & \frac{1}{2} & 0 & 0 & 0 \\
 \frac{1}{2} & 0 & \frac{1}{2} & 0 & 0 \\
-1 & 0 & 0 & 1 & 0 \\ \hline
+1 & 0 & 0 & 1 & 0 \\ \hdashline
 & \frac{1}{6} & \frac{1}{3} & \frac{1}{3} & \frac{1}{6}
 \end{array}
 $$
@@ -1721,8 +1721,8 @@ The project includes a test suite that validates the key mathematical properties
 
 **Convergence behaviour (RK4):** Running the simulation at increasing resolutions shows rapid convergence:
 
-| N_POINTS | Time step $\\Delta t$ | Positive peak (% Tn) | Negative peak (% Tn) | Peak $|T|$ (% Tn) |
-|---|---|---|---|---|
+| N_POINTS | Time step $\\Delta t$ | Positive peak (% Tn) | Negative peak (% Tn) | Peak (abs T, % Tn) |
+|:---|---:|---:|---:|---:|
 | 500 | 401 $\\mu$s | 299.61 | -416.84 | 416.84 |
 | 1,000 | 200 $\\mu$s | 299.59 | -416.84 | 416.84 |
 | 2,000 | 100 $\\mu$s | 299.58 | -416.84 | 416.84 |
