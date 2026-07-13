@@ -14,8 +14,10 @@
    - 1.2 [The Clarke Transformation (abc -> alphabeta)](#12-the-clarke-transformation-abc-alphabeta)
    - 1.3 [The Park Transformation (alphabeta -> dq)](#13-the-park-transformation-alphabeta-dq)
    - 1.4 [Amplitude-Invariant vs Power-Invariant Forms](#14-amplitude-invariant-vs-power-invariant-forms)
-   - 1.5 [Complex Space-Vector Notation](#15-complex-space-vector-notation)
-   - 1.6 [Why the Stationary Frame for This Application](#16-why-the-stationary-frame-for-this-application)
+   - 1.5 [SI Units vs Per-Unit](#15-si-units-vs-per-unit)
+   - 1.6 [Complex Space-Vector Notation](#16-complex-space-vector-notation)
+   - 1.7 [Why the Stationary Frame for This Application](#17-why-the-stationary-frame-for-this-application)
+   - 1.8 [Terminology Clarification: alpha-beta vs dq](#18-terminology-clarification-alpha-beta-vs-dq)
 2. [Machine Magnetic Structure and Flux Linkage](#2-machine-magnetic-structure-and-flux-linkage)
    - 2.1 [Self and Mutual Inductances of a Wound-Rotor Machine](#21-self-and-mutual-inductances-of-a-wound-rotor-machine)
    - 2.2 [Effect of the d-q Transformation on Inductances](#22-effect-of-the-d-q-transformation-on-inductances)
@@ -209,7 +211,7 @@ $$
 
 where $V$ is the **peak** phase voltage magnitude.
 
-**Why this matters:** The Clarke transformation reduces the problem from three coupled equations to two orthogonal ones, but the resulting $\alpha\beta$ quantities are still sinusoidal at the electrical frequency $\omega_s$. The inductance matrix in the $\alpha\beta$ frame is constant (not rotor-position-dependent) - this is the key simplification.
+**Why this matters:** The Clarke transformation replaces the position-dependent $3\times3$ inductance matrix of the $abc$ model with a constant $2\times2$ matrix in the $\alpha\beta$ frame. The stator self-inductances become equal and the $\alpha$ and $\beta$ axes are magnetically decoupled (zero mutual inductance between axes). What was time-varying geometry in $abc$ becomes a constant-coefficient system in $\alpha\beta$, at the cost of introducing explicit speed-voltage terms in the rotor equation (see Section 4.2).
 
 ### 1.3 The Park Transformation (alphabeta -> dq)
 
@@ -239,7 +241,17 @@ The transformation scaling factor affects the magnitude of the resulting quantit
 
 The amplitude-invariant form is used throughout this project because it preserves the intuitive relationship: a balanced three-phase sinusoidal set with peak amplitude $V$ maps to a d-q vector of magnitude $V$. The factor $3/2$ then appears explicitly in the torque equation (see [Section 3.2](#32-the-d-q-torque-expression)).
 
-### 1.5 Complex Space-Vector Notation
+### 1.5 SI Units vs Per-Unit
+
+All quantities in this project are expressed in **SI units** (volts, amperes, ohms, henries, newton-metres, etc.) rather than the per-unit system commonly used in power system engineering. This choice was made because:
+
+1. **Direct correspondence to code:** The parameters in `input.jsonc` and the output CSV files use SI units, making it straightforward to compare code outputs with nameplate data, oscilloscope measurements, or manufacturer datasheets without conversion.
+2. **Avoiding base-value ambiguity:** Per-unit systems require choosing base voltage, current, impedance, and power bases. The conventions vary between IEEE, IEC, and individual manufacturers, introducing a potential source of error.
+3. **Numerical conditioning:** For the motor sizes this project targets (hundreds to thousands of horsepower), SI quantities are well-scaled for double-precision floating point (resistances in $10^{-2}$-$10^0\ \Omega$, inductances in $10^{-3}$-$10^{-1}$ H, torques in $10^3$-$10^5$ N·m).
+
+The per-unit system would be more convenient if the model were extended to very large or very small machines where SI values span many orders of magnitude, or if the model were integrated into a larger power system simulation.
+
+### 1.6 Complex Space-Vector Notation
 
 It is convenient to combine the $d$ and $q$ components into a complex number:
 
@@ -251,7 +263,7 @@ where $j = \sqrt{-1}$ is the imaginary unit (not to be confused with current $i$
 
 The differential equations for $d$ and $q$ can then be written as a single complex equation. For example, a sinusoidal $d$-axis signal and co-sinusoidal $q$-axis signal combine to form a rotating vector $Fe^{j\omega t}$.
 
-### 1.6 Why the Stationary Frame for This Application
+### 1.7 Why the Stationary Frame for This Application
 
 Three common reference frames are available for induction machine analysis:
 
@@ -273,7 +285,7 @@ This project uses the **stationary reference frame** for the following reasons:
 
 **Implementation:** The stationary-frame space-vector model is implemented in `scim_calc/dq.py`, with the state vector representing the real and imaginary parts of $\psi_s$ and $\psi_r$ directly.
 
-### 1.7 Terminology Clarification: alpha-beta vs dq
+### 1.8 Terminology Clarification: alpha-beta vs dq
 
 Throughout this document and in the code, the model is referred to as a **"d-q model"**. Strictly speaking, since $\omega = 0$ (stationary frame), the transformation used is the **Clarke transformation** ($abc \to \alpha\beta$), not the **Park transformation** ($\alpha\beta \to dq$). The correct technical name would be an **$\alpha\beta$ model** or a **Clarke-frame model**.
 
@@ -384,9 +396,9 @@ $$
 \bar{L}_{s,r} = L_m e^{j\theta_r}
 $$
 
-In the stationary frame (which is what we use), the inductance matrix is still $\theta_r$-dependent because the stator and rotor axes are physically misaligned. However, when the rotor equation is written in rotor coordinates, the transformation back to the stationary frame produces the $j\omega_{re}\psi_r$ term in [Equation 4.2](#42-rotor-voltage-equation-in-the-stationary-frame).
+**Resolving the reference-frame question:** The stator self-inductances ($L_s$) are constant in any frame because the stator windings are fixed. The rotor self-inductances ($L_r$) are also constant because the rotor is symmetric. The stator-to-rotor mutual inductances, however, depend on the relative angle $\theta_r$ between the stator and rotor axes. In the stationary $abc$ frame, this dependence appears as $\cos\theta_r$, $\cos(\theta_r\pm120^\circ)$, etc. In the stationary $\alpha\beta$ frame, it appears as the rotation matrix above. These position-dependent mutual inductances are not eliminated by the Clarke transformation — they are transformed from trigonometric functions of $\theta_r$ into the explicit rotation matrix $\begin{bmatrix}\cos\theta_r & -\sin\theta_r \\ \sin\theta_r & \cos\theta_r\end{bmatrix}$.
 
-**The key insight:** The d-q transformation does not make all inductances constant - it makes them constant **in a given reference frame**. The choice of the stationary frame means the rotor quantities rotate relative to the stator, and this rotation appears as the $j\omega_{re}\psi_r$ speed-voltage term.
+The key simplification of the d-q approach is that this rotation matrix, when combined with the rotor voltage equation, produces a **constant-coefficient system with an explicit speed-voltage term** $j\omega_{re}\psi_r$, rather than a time-varying coefficient system. The $\theta_r$ dependence is not removed — it is converted from a parameter variation into a dynamic term in the differential equation. This is what makes the state-space formulation possible: the system matrix becomes constant (for constant speed), and the rotation of the rotor relative to the stator is captured by the $j\omega_{re}\psi_r$ term in the rotor equation.
 
 ### 2.3 Leakage vs Magnetizing Inductance
 
@@ -473,7 +485,15 @@ $$
 
 For the test motor, $\Delta \approx 5.46 \times 10^{-7}\ \text{H}^2$.
 
-If $L_m^2 = L_s L_r$ (perfect magnetic coupling, no leakage), then $\Delta = 0$ and the inverse does not exist. This is physically impossible - all real machines have leakage flux. As $\Delta \to 0$, the currents become increasingly sensitive to small changes in flux (ill-conditioning), but for typical induction machines with $\sigma > 0.02$, this is not a practical concern.
+If $L_m^2 = L_s L_r$ (perfect magnetic coupling, no leakage), then $\Delta = 0$ and the inverse does not exist. This is physically impossible - all real machines have leakage flux. As $\Delta \to 0$, the currents become increasingly sensitive to small changes in flux (ill-conditioning).
+
+The **condition number** of the $2 \times 2$ inductance matrix is:
+
+$$
+\kappa = \frac{L_s L_r + L_m^2}{2 L_{\ell s} L_{\ell r} + L_m (L_{\ell s} + L_{\ell r})}
+$$
+
+For the test motor, $\kappa \approx 1.09$, indicating excellent numerical conditioning — the inverse is stable and accurate. Even for machines with very large magnetizing reactance (e.g., $X_m / X_s > 100$), the condition number remains below 10, so ill-conditioning of the flux-current inversion is not a practical concern for any realistic induction machine.
 
 ### 2.6 Physical Interpretation of the Inverse
 
@@ -659,7 +679,7 @@ where:
 
 By default, speed dynamics are **disabled** (`USE_SPEED_DYNAMICS = false`), and $\omega_m$ is held constant at its pre-fault value. This is justified because:
 
-1. **Time-scale separation:** The electrical time constants ($T_{r,sc} \approx 81\ \text{ms}$, $T_{s,dc} \approx 85\ \text{ms}$) are much shorter than the mechanical time constant ($J/B \gg 1\ \text{s}$ for a large motor). The rotor speed does not change appreciably during the 200 ms electrical transient.
+1. **Time-scale separation:** The electrical dynamics decay with time constants on the order of $T_{s,dc} \approx 85$ ms and $T_{r,sc} \approx 81$ ms. The mechanical dynamics are governed by $J\,d\omega_m/dt = T_e - T_L$; for a large motor with $J \approx 10$ kg·m$^2$, the speed change over 200 ms is negligible (a torque of $1.5\times T_{nom} \approx 6000$ N·m acting for 0.2 s produces $\Delta\omega_m \approx T\cdot\Delta t / J \approx 120$ rad/s, but the electromagnetic torque oscillates and its average over the transient is close to zero). The rotor speed therefore does not change appreciably during the 200 ms electrical transient.
 2. **Conservative result:** Constant speed produces slightly higher peak torque because the machine does not decelerate (which would reduce the slip and the rotor-induced voltage). For worst-case analysis, this is the appropriate choice.
 3. **Simulation speed:** Solving the mechanical equation increases the state dimension by one and adds a small computational cost, but the main reason for disabling it is the conservative-worst-case argument.
 
@@ -794,14 +814,14 @@ For the test motor at rated slip ($s = 0.00779$, $\omega_m = 374.1$ rad/s), the 
 
 | Pair | Eigenvalue $\\lambda$ | $|\\lambda|$ (rad/s) | Frequency $f$ (Hz) | Damping ratio $\\zeta$ | Character |
 |---|---|---|---|---|---|
-| 1 | $-12.38 \\pm j373.68$ | 373.9 | 59.5 | 0.033 | **Stator-dominated**: oscillatory at near-line frequency, light damping |
-| 2 | $-11.79 \\pm j0.37$ | 11.8 | 1.88 | 0.9995 | **Rotor-dominated**: almost critically damped, near-zero oscillation |
+| 1 | $-12.38 \\pm j373.68$ | 373.9 | 59.5 | 0.033 | Primarily associated with stator flux dynamics; oscillatory at near-line frequency |
+| 2 | $-11.79 \\pm j0.37$ | 11.8 | 1.88 | 0.9995 | Primarily associated with rotor flux dynamics; nearly critically damped |
 
 Both pairs have comparable decay rates ($\\alpha \\approx 12$ s$^{-1}$), meaning both the stator and rotor flux transients decay on similar timescales ($\\tau \\approx 85$ ms). The key difference is their oscillatory content:
 - Pair 1 oscillates at approximately the electrical fundamental frequency (60 Hz) and is responsible for the AC torque ripple.
 - Pair 2 is nearly critically damped ($\\zeta \\approx 1$) and contributes an essentially aperiodic decay component.
 
-The **stator-dominated mode** determines the 60 Hz torque ripple amplitude, while the **rotor-dominated mode** governs the overall envelope decay rate of the transient.
+The mode primarily associated with the stator determines the 60 Hz torque ripple amplitude, while the mode primarily associated with the rotor governs the overall envelope decay rate. (The labels "stator mode" and "rotor mode" are used as shorthand; a rigorous modal decomposition would require eigenvector or participation-factor analysis.)
 
 ### 5.3 Time Constants and Natural Frequencies
 
@@ -822,6 +842,8 @@ $$
 
 These are the short-circuit inductances seen from the stator and rotor respectively, analogous to the short-circuit reactances in `quick.py`.
 
+> **Operational inductance vs self-inductance:** Two distinct inductance values appear in different parts of the model. The **self-inductance** $L_s = L_{\ell s} + L_m$ appears in the state equations (the flux-current matrix in Section 2.4) because it describes the total flux linking the stator winding when both stator and rotor carry current. The **short-circuit (or operational) inductance** $L_{s,sc} = L_{\ell s} + L_m \parallel L_{\ell r}$ appears in the time constants because it describes the effective inductance seen from the stator when the rotor circuit is closed (shorted through its own resistance). The difference is that during a transient, the rotor currents adjust to oppose changes in stator flux, reducing the effective inductance. The same distinction applies on the rotor side: $L_r$ in the state equations vs $L_{r,sc}$ in the rotor time constant.
+
 ### 5.4 Stiffness Ratio and Its Implications
 
 The **stiffness ratio** of a system of ODEs is the ratio of the largest to the smallest eigenvalue magnitude:
@@ -830,10 +852,10 @@ $$
 S = \frac{\max|\lambda|}{\min|\lambda|}
 $$
 
-For this system, the eigenvalues span a range that gives a stiffness ratio on the order of:
+From the computed eigenvalues (Section 5.2):
 
 $$
-S \approx \frac{1/T_{s,dc}}{1/T_{r0}} = \frac{T_{r0}}{T_{s,dc}} \approx \frac{1.57}{0.0848} \approx 18.5
+S = \frac{|\lambda_1|}{|\lambda_3|} = \frac{373.9}{11.8} \approx 31.7
 $$
 
 A system with $S < 100$ is generally considered **non-stiff** and can be efficiently integrated with explicit methods like RK4. This justifies the choice of RK4 over more complex implicit methods (see [Section 12](#12-alternative-numerical-methods)).
@@ -1176,7 +1198,7 @@ This explains the comparison results: the quick and d-q methods agree well for $
 
 ### 9.5 Effect on the Torque Waveform
 
-The torque waveform exhibits an asymmetric shape (unequal positive and negative peaks) because of the multi-component nature of the transient. The waveform can be interpreted as the superposition of transient components arising from stator and rotor flux interactions with distinct decay rates and oscillation frequencies.
+The torque waveform exhibits an asymmetric shape (unequal positive and negative peaks) because of the multi-component nature of the transient. The waveform can be interpreted as the superposition of transient components arising from stator and rotor flux interactions with distinct decay rates and oscillation frequencies. (This decomposition into separate DC and AC components, e.g. $\psi_s = \psi_s^{dc} + \psi_s^{ac}$, is an approximate interpretation; the rigorous description is that the transient is a superposition of the system's natural eigenmodes identified in Section 5.2.)
 
 The quick calculation, using a single-frequency cosine model, cannot capture this asymmetry without the optional $DC\_OFFSET\_FACTOR$ term.
 
