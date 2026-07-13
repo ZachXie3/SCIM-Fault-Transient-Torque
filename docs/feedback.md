@@ -1,348 +1,246 @@
-# Feedback to Programming Agent — Third-Round Review of `d_q_transient_model.md`
+# IEEE-Style Technical Review Feedback
 
-## Executive Summary
+## Overall Assessment
 
-The document is now in excellent shape and can reasonably be used as the primary technical reference for the project.
+**Overall technical quality:** 9.2/10
 
-**Current assessment:** 9–9.5 / 10
+The document is substantially above typical internal engineering documentation and approaches graduate textbook quality. The mathematical framework is fundamentally correct, the implementation rationale is well explained, and the linkage between theory and source code is excellent.
 
-The previously identified high-severity issues have been resolved:
-
-- Fault inception angle treatment is now mathematically correct.
-- Current continuity at fault inception is now correct.
-- Mechanical equation presentation is safer and cleaner.
-- RK4 stability explanation is technically sound.
-- Skin-effect limitations are described more realistically.
-- Leakage coefficient interpretation has been corrected.
-
-The remaining feedback focuses on consistency, validation, and polishing rather than correcting fundamental modeling errors.
+However, if the goal is to reach the standard expected for an IEEE Transactions paper (e.g., IEEE Transactions on Energy Conversion or IEEE Transactions on Industry Applications), several areas should be strengthened.
 
 ---
 
-## Major Improvements Successfully Implemented
+# Major Recommendations
 
-### 1. Fault Inception Angle Treatment
+## 1. Strengthen Theoretical Rigor
 
-**Status:** Excellent
+### Clarify the stationary-reference-frame discussion
 
-The document now correctly demonstrates rotational invariance of the ideal balanced d–q model.
+Avoid statements such as:
 
-Key improvements:
+> "The d-q transformation eliminates the time variation."
 
-- Explicit rotational-symmetry proof included.
-- Common space-vector rotation is shown to cancel in the torque expression.
-- Entire torque waveform is identified as angle invariant.
-- Angle dependence is correctly limited to future model extensions (unbalanced faults, saturation, asymmetry, etc.).
-
-This is now one of the strongest sections in the document.
-
----
-
-### 2. Fault Inception Current Continuity
-
-**Status:** Correct
-
-The revised explanation now correctly states:
-
-- Fluxes are continuous.
-- Inductance matrix is unchanged.
-- Currents are therefore continuous.
-- Discontinuity appears in derivatives due to change in voltage boundary condition.
-
-This now matches the actual state-space formulation.
-
----
-
-### 3. Mechanical Equation Presentation
-
-**Status:** Correct
-
-The previous expanded nonlinear matrix form was removed.
-
-The current presentation:
-
-```text
-J dω/dt = Te − TL
-```
-
-is much safer because it avoids possible sign inconsistencies between:
-
-- implementation,
-- documentation,
-- future maintenance updates.
-
----
-
-### 4. RK4 Stability Discussion
-
-**Status:** Strong
-
-The numerical-method section now:
-
-- correctly references full complex eigenvalues,
-- uses realistic electrical frequency scales,
-- removes unsupported machine-precision claims,
-- recommends convergence validation.
-
-This is now appropriate for an engineering reference document.
-
----
-
-### 5. Skin Effect Limitation
-
-**Status:** Strong
-
-The revised language properly acknowledges:
-
-- stator-frame DC offset effects,
-- higher-frequency rotor current content,
-- deep-bar rotor behavior,
-- limitations of the single-cage approximation.
-
-This provides a much more realistic statement of model limitations.
-
----
-
-## Remaining Recommended Improvements
-
-### 1. Clean Up the Angle-Sweep Description
-
-**Priority:** Medium
-
-The theory section correctly states:
-
-```text
-Torque is exactly invariant to fault inception angle.
-```
-
-However, the implementation discussion still contains language such as:
-
-```text
-Find worst-case angle.
-Find angle maximizing peak torque.
-Refine around worst angle.
-```
-
-For the current ideal balanced model, such an angle should not exist.
-
-### Recommended Revision
-
-Replace language implying optimization with validation-oriented wording.
+This is only true in the appropriate rotating reference frame.
 
 Suggested wording:
 
-> For the ideal balanced model, all inception angles should produce identical torque traces within floating-point tolerance. The sweep serves as a validation routine confirming rotational invariance. The infrastructure remains useful for future model extensions where angle dependence may exist.
+> "The Clarke/Park transformations reformulate the machine equations so that the position-dependent inductance matrix is replaced by constant inductances together with explicit speed-voltage terms. In the stationary reference frame, the rotor motion appears through the rotational EMF term jωψ."
 
 ---
 
-### 2. Soften Frequency Assignments in Section 9.5
+### Remove contradictory wording in Section 2.2
 
-**Priority:** Low-Medium
+Currently the document states both:
 
-The current discussion assigns specific frequencies to individual torque components.
+- the transformation makes inductances constant
+- the inductance matrix remains θ-dependent
 
-While physically reasonable, the explanation is still somewhat analytical rather than evidence-based.
+Rewrite this section to consistently explain:
 
-### Recommended Revision
-
-Replace assertions such as:
-
-```text
-This component occurs at exactly X frequency.
-```
-
-with:
-
-```text
-The waveform can be interpreted as multiple transient components.
-The exact frequency content should be verified by FFT.
-```
-
-This aligns better with the later FFT-validation recommendation.
+- abc model
+- Clarke transformation
+- stationary αβ model
+- origin of the jωψ term
 
 ---
 
-### 3. Add Actual Computed Eigenvalues
+### Expand the torque derivation
 
-**Priority:** Medium
+The current document jumps directly from magnetic co-energy to the final torque equation.
 
-Section 5 remains partially conceptual.
+For an IEEE paper, derive
 
-A reference document would benefit from including actual values from the test motor.
+T = ∂W'/∂θ
 
-### Recommended Addition
+starting from the position-dependent inductance matrix.
 
-```text
-Test Case Eigenvalues
-
-λ1,2 = ...
-λ3,4 = ...
-```
-
-Include:
-
-- damping rates,
-- oscillation frequencies,
-- source of calculation.
-
-Benefits:
-
-- strengthens the RK4 discussion,
-- strengthens modal interpretation,
-- improves reproducibility.
+This removes any appearance of "accepting the standard formula."
 
 ---
 
-### 4. Add FFT-Based Validation Results
+## 2. Improve Mathematical Precision
 
-**Priority:** Medium
+### Mechanical time constant discussion
 
-The document correctly recommends FFT validation but still relies primarily on qualitative spectral explanations.
+Replace references to J/B with inertia-based reasoning.
 
-### Recommended New Subsection
+The short-circuit transient is governed primarily by
 
-```text
-15.3 Example FFT of Test Motor Torque Waveform
-```
+J dω/dt = Te − TL
 
-Include:
-
-- dominant frequencies,
-- amplitudes,
-- comparison against expected modal frequencies.
-
-This converts theory into evidence.
+rather than viscous friction.
 
 ---
 
-## Recommended Regression Tests
+### Eigenvalue interpretation
 
-### A. Angle Invariance Test
+Avoid describing eigenvalues as "stator dominated" or "rotor dominated" without supporting analysis.
 
-Run:
+Instead:
 
-```text
-θ0 = 0°
-θ0 = 30°
-θ0 = 60°
-θ0 = 90°
-θ0 = 120°
-θ0 = 150°
-```
+- compute eigenvectors
+- perform participation-factor analysis
+- discuss modal energy
 
-Verification:
+Otherwise use softer wording such as
 
-```python
-max(abs(T_theta - T_ref)) < tolerance
-```
-
-Expected result:
-
-```text
-All torque traces identical within floating-point tolerance.
-```
-
-This directly validates the rotational-invariance proof presented in the document.
+> "primarily associated with..."
 
 ---
 
-### B. RK4 Convergence Validation
+### Stiffness analysis
 
-Run simulations with:
+The stiffness ratio should be computed directly from the numerical eigenvalues rather than estimated using Tr0.
 
-```text
-5000 points
-10000 points
-20000 points
-```
-
-Compare:
-
-- peak positive torque,
-- peak negative torque,
-- peak absolute torque,
-- RMS waveform error.
-
-Expected outcome:
-
-```text
-Approximate fourth-order convergence.
-```
+IEEE reviewers typically expect stiffness to be defined directly from the system matrix.
 
 ---
 
-### C. Torque Formula Consistency Test
+### DC offset discussion
 
-Verify agreement between:
+The solution
 
-1. Implemented complex torque equation.
-2. Documentation equation.
-3. Any future expanded real-form expression.
+ψ = ψdc + ψac
 
-Expected result:
+should be described as an approximation.
 
-```text
-Numerical agreement within machine precision.
-```
+Strictly speaking, the transient is the superposition of system eigenmodes.
 
 ---
 
-### D. FFT Validation Test
+## 3. Add Missing Engineering Discussions
 
-Compute FFT of:
+### Explain operational inductance
 
-```text
-T_fault(t)
-```
+One section should explicitly answer
 
-Report:
+Why
 
-- dominant frequencies,
-- amplitudes,
-- correspondence to expected modes.
+Ls = Lls + Lm
 
-This provides objective support for the spectrum discussion.
+appears in the state equations,
 
----
+while
 
-## Suggested Final Enhancements Before Freeze
+Ls,sc = Lls + LmLlr/(Lm+Llr)
 
-### Nice-to-Have Enhancements
+appears elsewhere.
 
-1. Add actual eigenvalues from the test case.
-2. Add FFT example plot.
-3. Add automatic angle-invariance validation output.
-4. Add RK4 convergence-check appendix.
-5. Add a short verification section documenting regression tests.
-
-These are quality improvements rather than corrections.
+This is one of the most common sources of confusion.
 
 ---
 
-## Final Assessment
+### Explain SI vs per-unit
 
-| Area | Assessment |
-|--------|--------|
-| Machine Theory | Excellent |
-| d–q / αβ Formulation | Excellent |
-| Torque Derivation | Excellent |
-| Fault Modeling | Excellent |
-| Numerical Integration | Very Good |
-| Documentation Structure | Very Good |
-| Validation Coverage | Good, could be expanded |
-| Remaining Technical Risks | Minor |
+A short subsection explaining why SI units are used instead of per-unit quantities would improve readability.
 
 ---
 
-## Final Recommendation
+### Saturation
 
-The document is now technically robust enough for:
+Rather than simply stating saturation is ignored, briefly explain
 
-- project documentation,
-- onboarding future developers,
-- internal engineering review,
-- long-term maintenance reference.
+Lm = f(Im)
 
-No high-severity modeling concerns remain.
+and how nonlinear magnetics would modify the state equations.
 
-The remaining work is validation-oriented and should be treated as improvement opportunities rather than defect corrections.
+---
+
+### Numerical conditioning
+
+Expand discussion of
+
+Δ = LsLr − Lm²
+
+including condition number and sensitivity when Xm becomes large.
+
+---
+
+## 4. Validation
+
+This is the largest missing component.
+
+An IEEE paper normally requires validation against one or more of
+
+- laboratory measurements
+- PSCAD
+- MATLAB/Simulink
+- EMTP
+- published benchmark
+- manufacturer data
+
+Include
+
+- current waveforms
+- torque waveforms
+- rotor speed
+- RMS error
+- peak error
+
+between simulation and reference.
+
+---
+
+## 5. Literature Review
+
+The reference section should cite the canonical machine-model references, for example
+
+- Krause, Wasynczuk, Sudhoff
+- Boldea
+- Leonhard
+- Fitzgerald, Kingsley & Umans
+- IEEE Std 112 (where appropriate)
+
+Discuss where the present implementation differs from classical formulations.
+
+---
+
+## 6. Improve Research Contribution
+
+The current document is an excellent implementation reference, but an IEEE paper also needs a clear research contribution.
+
+Possible contributions include
+
+- practical stationary-frame implementation
+- comparison with analytical transient models
+- improved initialization
+- validation against industrial motors
+- computational efficiency
+- angle-sweep methodology
+- comparison with commercial tools
+
+State this contribution explicitly.
+
+---
+
+## Minor Editorial Improvements
+
+- Define every symbol at first use.
+- Use consistent notation for ωe, ωr, and ωm.
+- Avoid absolute wording ("always", "exactly") where engineering approximations are intended.
+- Add figure references within the text.
+- Separate implementation details from theoretical derivations.
+
+---
+
+# Suggested Additional Sections
+
+1. Model Validation
+2. Modal Analysis
+3. Operational Inductance vs Self Inductance
+4. Numerical Stability
+5. Computational Complexity
+6. Comparison with Existing Literature
+7. Practical Limitations
+
+---
+
+# Estimated IEEE Readiness
+
+Current document:
+- Internal engineering documentation: **10/10**
+- Master's thesis appendix: **9.5/10**
+- IEEE conference paper companion: **8.5/10**
+- IEEE Transactions supplementary documentation: **8.5–9/10**
+
+After implementing the recommendations above, the document would approach the level expected for archival IEEE publications.
