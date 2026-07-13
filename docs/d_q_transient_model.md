@@ -1740,6 +1740,44 @@ The low-frequency peak near 5 Hz (limited by the FFT frequency resolution of $\D
 
 ---
 
+### 15.5 Verification and Regression Tests
+
+The project includes a test suite that validates the key mathematical properties asserted in this document. The following table summarizes the available tests and what they verify:
+
+| Test file | Tests | What it validates |
+|---|---|---|
+| `test_invariance.py` | 4 | Fault inception angle has no effect on torque (rotational symmetry proof) at $0^\circ, 45^\circ, 90^\circ, 180^\circ$ and multiple angles |
+| `test_current_continuity.py` | 2 | Stator and rotor currents are continuous across the fault instant (flux continuity + constant inductance matrix) |
+| `test_torque_sign.py` | 3 | Pre-fault torque is positive (motoring convention); complex torque matches IEEE phasor torque |
+| `test_eigenvalue_stability.py` | 4 | System matrix eigenvalues have negative real parts; RK4 stability condition $|R(z)| < 1$ is satisfied with margin; eigenvalue magnitudes are in the expected range |
+| `test_spectral.py` | 4 | Dominant torque spectral peak is near 60 Hz; low-frequency content is present; no unexpected high-frequency numerical noise |
+| `test_rk4_convergence.py` | 2 | Peak torque values converge as step size decreases; the default 5000-point resolution gives results within 0.1% of 10000-point resolution |
+
+**Convergence behaviour (RK4):** Running the simulation at increasing resolutions shows rapid convergence:
+
+| N_POINTS | Time step $\\Delta t$ | Positive peak (% Tn) | Negative peak (% Tn) | Peak $|T|$ (% Tn) |
+|---|---|---|---|---|
+| 500 | 401 $\\mu$s | 299.61 | -416.84 | 416.84 |
+| 1,000 | 200 $\\mu$s | 299.59 | -416.84 | 416.84 |
+| 2,000 | 100 $\\mu$s | 299.58 | -416.84 | 416.84 |
+| 5,000 | 40 $\\mu$s | 299.62 | -416.84 | 416.84 |
+
+The default setting of 5000 points over 0.2 s ($\\Delta t \\approx 40\\ \\mu$s) provides excellent resolution: the peak torque values vary by less than 0.05% even when the step size is increased by 10x.
+
+**Running the tests:**
+
+```bash
+# Run all tests (excluding the slow convergence check)
+python -m pytest tests/ -k "not slow"
+
+# Run all tests including convergence
+python -m pytest tests/
+```
+
+All tests are located in the `tests/` directory and use the fixture data in `tests/fixtures/` as regression baselines.
+
+---
+
 ## 16. Parameter Sensitivity Analysis
 
 ### 16.1 Stator Resistance Rs
