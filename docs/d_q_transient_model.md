@@ -179,29 +179,19 @@ The d-q transformation eliminates this time variation by projecting the $abc$ qu
 
 The **Clarke transformation** (also called the $abc \to \alpha\beta 0$ transformation) converts three-phase quantities into an orthogonal two-axis system plus a zero-sequence component. For a set of three-phase voltages $v_a, v_b, v_c$:
 
-$$
-\begin{bmatrix} v_\alpha \\ v_\beta \\ v_0 \end{bmatrix}
-= \frac{2}{3}
-\begin{bmatrix}
-1 & -\frac{1}{2} & -\frac{1}{2} \\
-0 & \frac{\sqrt{3}}{2} & -\frac{\sqrt{3}}{2} \\
-\frac{1}{2} & \frac{1}{2} & \frac{1}{2}
-\end{bmatrix}
-\begin{bmatrix} v_a \\ v_b \\ v_c \end{bmatrix}
-$$
+```text
+[valpha]   2  [   1      -1/2      -1/2   ] [va]
+[vbeta ] = - [   0     sqrt(3)/2 -sqrt(3)/2] [vb]
+[ v0   ]   3 [  1/2      1/2       1/2    ] [vc]
+```
 
 The factor $2/3$ is a scaling choice. The inverse transformation is:
 
-$$
-\begin{bmatrix} v_a \\ v_b \\ v_c \end{bmatrix}
-=
-\begin{bmatrix}
-1 & 0 & 1 \\
--\frac{1}{2} & \frac{\sqrt{3}}{2} & 1 \\
--\frac{1}{2} & -\frac{\sqrt{3}}{2} & 1
-\end{bmatrix}
-\begin{bmatrix} v_\alpha \\ v_\beta \\ v_0 \end{bmatrix}
-$$
+```text
+[va]   [   1         0         1 ] [valpha]
+[vb] = [ -1/2    sqrt(3)/2    1 ] [vbeta ]
+[vc]   [ -1/2   -sqrt(3)/2    1 ] [ v0   ]
+```
 
 For a **balanced** three-phase system (no zero-sequence component), $v_a + v_b + v_c = 0$ and $v_0 = 0$. The $\alpha\beta$ components then form a rotating vector:
 
@@ -217,16 +207,11 @@ where $V$ is the **peak** phase voltage magnitude.
 
 The **Park transformation** rotates the $\alpha\beta$ axes to follow the rotor (or the synchronously rotating field). If we define a reference frame rotating at $\omega$:
 
-$$
-\begin{bmatrix} f_d \\ f_q \end{bmatrix}
-=
-\begin{bmatrix}
-\cos\theta & \sin\theta \\
--\sin\theta & \cos\theta
-\end{bmatrix}
-\begin{bmatrix} f_\alpha \\ f_\beta \end{bmatrix}
-\quad\text{where}\quad \theta = \int_0^t \omega(\tau)\,d\tau + \theta_0
-$$
+```text
+[fd]   [ cos(theta)  sin(theta)] [falpha]
+[fq] = [-sin(theta)  cos(theta)] [fbeta ]
+```
+where theta = integral(omega(tau) dtau) + theta_0
 
 In the **synchronous reference frame**, $\omega = \omega_s$, so the $dq$ quantities are constant in steady state. In the **stationary reference frame** (used in this project), $\omega = 0$ and $\theta = 0$, so $f_d = f_\alpha$ and $f_q = f_\beta$. The stationary-frame d-q transformation is therefore equivalent to the Clarke transformation.
 
@@ -310,15 +295,10 @@ The decision to use the $dq$ notation despite the stationary frame is a delibera
 
 Consider an ideal induction machine with sinusoidally distributed windings. In the native $abc$ (three-phase) frame, the flux linking each winding is a linear combination of all six currents (three stator $a,b,c$ and three rotor $a,b,c$), weighted by self and mutual inductances:
 
-$$
-\begin{bmatrix} \psi_{abcs} \\ \psi_{abcr} \end{bmatrix}
-=
-\begin{bmatrix}
-\mathbf{L}_s(\theta_r) & \mathbf{L}_{sr}(\theta_r) \\
-\mathbf{L}_{sr}^T(\theta_r) & \mathbf{L}_r(\theta_r)
-\end{bmatrix}
-\begin{bmatrix} i_{abcs} \\ i_{abcr} \end{bmatrix}
-$$
+```text
+[psi_abcs]   [ Ls(theta_r)   Lsr(theta_r) ] [i_abcs]
+[psi_abcr] = [ Lsr^T(theta_r) Lr(theta_r) ] [i_abcr]
+```
 
 where each submatrix is $3 \times 3$. For a machine with sinusoidally distributed windings, the elements are:
 
@@ -340,30 +320,19 @@ $$
 
 **After applying the Clarke transformation ($abc \to \alpha\beta$),** the $3 \times 3$ stator and rotor matrices become $2 \times 2$ in the $\alpha\beta$ frame, and the inductances simplify dramatically:
 
-$$
-\mathbf{L}_s^{\alpha\beta} =
-\begin{bmatrix}
-L_{\ell s} + L_m & 0 \\
-0 & L_{\ell s} + L_m
-\end{bmatrix}
-=
-\begin{bmatrix}
-L_s & 0 \\
-0 & L_s
-\end{bmatrix}
-$$
+```text
+Ls_ab = [Lls+Lm    0   ] = [Ls  0 ]
+        [   0    Lls+Lm]   [ 0  Ls]
+```
 
 where $L_s = L_{\ell s} + L_m$ is the **stator self-inductance per axis** in the $\alpha\beta$ frame. The zero off-diagonals confirm that the $\alpha$ and $\beta$ axes are magnetically decoupled - a key advantage of the transformed model.
 
 The stator-to-rotor mutual inductance matrix in the $\alpha\beta$ frame becomes:
 
-$$
-\mathbf{L}_{sr}^{\alpha\beta} = L_m
-\begin{bmatrix}
-\cos\theta_r & -\sin\theta_r \\
-\sin\theta_r & \cos\theta_r
-\end{bmatrix}
-$$
+```text
+Lsr_ab = Lm * [cos(tr)  -sin(tr)]
+             [sin(tr)   cos(tr) ]
+```
 
 The crucial observation: **the diagonal elements $L_s$, $L_r$ and the stator-stator mutual terms are constant** (they depend only on the fixed geometry), while the **stator-to-rotor mutual inductances vary with rotor position $\theta_r$**. This position dependence is expressed through the rotation matrix above and ultimately manifests as the $j\omega_{re}\psi_r$ speed-voltage term in the rotor equation (see [Section 4.2](#42-rotor-voltage-equation-in-the-stationary-frame)).
 
@@ -440,30 +409,21 @@ The leakage coefficient is $\sigma \approx 0.043$, indicating typical induction-
 
 In the stationary d-q frame, the flux-current relationship is:
 
-$$
-\begin{bmatrix} \psi_s \\ \psi_r \end{bmatrix}
-=
-\begin{bmatrix}
-L_s & L_m \\
-L_m & L_r
-\end{bmatrix}
-\begin{bmatrix} i_s \\ i_r \end{bmatrix}
-$$
+```text
+[psi_s]   [Ls  Lm] [i_s]
+[psi_r] = [Lm  Lr] [i_r]
+```
 
 where $\psi_s$, $\psi_r$, $i_s$, $i_r$ are complex numbers (combining $d$ and $q$ components).
 
 To recover currents from fluxes (as required at every time step of the d-q simulation), we invert this 2x2 system:
 
-$$
-\begin{bmatrix} i_s \\ i_r \end{bmatrix}
-=
-\frac{1}{\Delta}
-\begin{bmatrix}
-L_r & -L_m \\
--L_m & L_s
-\end{bmatrix}
-\begin{bmatrix} \psi_s \\ \psi_r \end{bmatrix}
-$$
+```text
+[i_s]   1  [ Lr  -Lm ] [psi_s]
+[i_r] = -  [ -Lm  Ls ] [psi_r]
+        D
+```
+where D = Delta = Ls*Lr - Lm^2
 
 where $\Delta = L_s L_r - L_m^2$ is the **leakage determinant**.
 
@@ -544,7 +504,7 @@ $$
 where $p$ is the number of pole pairs. In complex form:
 
 $$
-T_e = -\frac{3}{2} p \; \operatorname{Im}\{\psi_s \cdot i_s^*\}
+T_e = -\frac{3}{2} p \; Im\{\psi_s \cdot i_s^*\}
 $$
 
 where $i_s^*$ denotes the complex conjugate of $i_s$.
@@ -558,7 +518,7 @@ $$
 The imaginary part is $\psi_{qs} i_{ds} - \psi_{ds} i_{qs} = -(\psi_{ds} i_{qs} - \psi_{qs} i_{ds})$, giving:
 
 $$
--\frac{3}{2} p \operatorname{Im}\{\psi_s i_s^*\} = \frac{3}{2} p (\psi_{ds} i_{qs} - \psi_{qs} i_{ds})
+-\frac{3}{2} p Im\{\psi_s i_s^*\} = \frac{3}{2} p (\psi_{ds} i_{qs} - \psi_{qs} i_{ds})
 $$
 
 **Implementation:** `scim_calc/circuit.py:torque_from_flux_current()`, line 44. The factor $3/2$ is hard-coded as `-1.5`.
@@ -569,9 +529,9 @@ Several mathematically equivalent forms exist:
 
 | Form | Expression | Used in | Numerical note |
 |---|---|---|---|
-| Flux x current | $-\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\}$ | This project | Best - only needs $\psi_s$ and $i_s$ |
-| Current x inductance | $\frac{3}{2}p\,L_m\,\operatorname{Im}\{i_s i_r^*\}$ | Alternative | Needs both $i_s$ and $i_r$ |
-| Rotor flux x current | $-\frac{3}{2}p\,\frac{L_m}{L_r}\,\operatorname{Im}\{\psi_r i_s^*\}$ | Rotor-flux-oriented control | Needs flux estimation |
+| Flux x current | $-\frac{3}{2}p\,Im\{\psi_s i_s^*\}$ | This project | Best - only needs $\psi_s$ and $i_s$ |
+| Current x inductance | $\frac{3}{2}p\,L_m\,Im\{i_s i_r^*\}$ | Alternative | Needs both $i_s$ and $i_r$ |
+| Rotor flux x current | $-\frac{3}{2}p\,\frac{L_m}{L_r}\,Im\{\psi_r i_s^*\}$ | Rotor-flux-oriented control | Needs flux estimation |
 | Power balance | $T_e = \frac{P_{ag} - P_{cu,r}}{\omega_{re}}$ | Analytical | Not for real-time |
 
 The chosen form (flux x current) is preferred because:
@@ -699,13 +659,11 @@ if use_speed_dynamics:
 
 Combining the three equations:
 
-$$
-\begin{aligned}
-\frac{d\psi_s}{dt} &= -R_s i_s \\
-\frac{d\psi_r}{dt} &= j\,p\,\omega_m\,\psi_r - R_r i_r \\
-\frac{d\omega_m}{dt} &= \frac{1}{J}\left(T_e - T_L\right)
-\end{aligned}
-$$
+```text
+dpsi_s/dt  = -Rs * i_s
+dpsi_r/dt  = j * p * wm * psi_r - Rr * i_r
+domega_m/dt = (Te - TL) / J
+```
 
 with the algebraic constraints:
 
@@ -713,7 +671,7 @@ $$
 \begin{aligned}
 i_s &= \frac{L_r \psi_s - L_m \psi_r}{\Delta} \\
 i_r &= \frac{-L_m \psi_s + L_s \psi_r}{\Delta} \\
-T_e &= -\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\}
+T_e &= -\frac{3}{2}p\,Im\{\psi_s i_s^*\}
 \end{aligned}
 $$
 
@@ -723,29 +681,20 @@ This is a system of **three complex differential equations** (or **five real dif
 
 The electrical subsystem can be written as four real differential equations for the flux components. With $\omega_m$ held constant (speed dynamics disabled), the system is **linear time-invariant (LTI):**
 
-$$
-\frac{d}{dt}
-\begin{bmatrix}
-\psi_{ds} \\ \psi_{qs} \\ \psi_{dr} \\ \psi_{qr}
-\end{bmatrix}
-=
-\begin{bmatrix}
--\frac{R_s L_r}{\Delta} & 0 & \frac{R_s L_m}{\Delta} & 0 \\
-0 & -\frac{R_s L_r}{\Delta} & 0 & \frac{R_s L_m}{\Delta} \\
-\frac{R_r L_m}{\Delta} & 0 & -\frac{R_r L_s}{\Delta} & -p\omega_m \\
-0 & \frac{R_r L_m}{\Delta} & p\omega_m & -\frac{R_r L_s}{\Delta}
-\end{bmatrix}
-\begin{bmatrix}
-\psi_{ds} \\ \psi_{qs} \\ \psi_{dr} \\ \psi_{qr}
-\end{bmatrix}
-$$
+```text
+d/dt [psi_ds]   [ -Rs*Lr/D       0        Rs*Lm/D       0     ] [psi_ds]
+    [psi_qs] = [     0       -Rs*Lr/D       0        Rs*Lm/D ] [psi_qs]
+    [psi_dr]   [  Rr*Lm/D       0       -Rr*Ls/D    -p*wm   ] [psi_dr]
+    [psi_qr]   [     0        Rr*Lm/D     p*wm    -Rr*Ls/D ] [psi_qr]
+```
+where D = Delta = Ls*Lr - Lm^2, wm = omega_m, p = pole_pairs
 
 When speed dynamics are enabled, the mechanical equation completes the system:
 
 $$
 \frac{d\omega_m}{dt} = \frac{1}{J}\left(T_e - T_L\right),
 \qquad
-T_e = -\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\}
+T_e = -\frac{3}{2}p\,Im\{\psi_s i_s^*\}
 $$
 
 where $i_s$ is recovered from the flux-current inversion at each step. The coupled system is **nonlinear** because the speed $\omega_m$ appears in the electrical matrix (through $p\omega_m$) and the torque $T_e$ depends on the electrical states.
@@ -779,15 +728,13 @@ $$
 
 where $\mathbf{x} = [\psi_{ds}, \psi_{qs}, \psi_{dr}, \psi_{qr}]^T$ and $\mathbf{A}$ is:
 
-$$
-\mathbf{A} =
-\begin{bmatrix}
--\frac{R_s L_r}{\Delta} & 0 & \frac{R_s L_m}{\Delta} & 0 \\
-0 & -\frac{R_s L_r}{\Delta} & 0 & \frac{R_s L_m}{\Delta} \\
-\frac{R_r L_m}{\Delta} & 0 & -\frac{R_r L_s}{\Delta} & -p\omega_m \\
-0 & \frac{R_r L_m}{\Delta} & p\omega_m & -\frac{R_r L_s}{\Delta}
-\end{bmatrix}
-$$
+```text
+A = [ -Rs*Lr/D       0        Rs*Lm/D       0      ]
+    [    0       -Rs*Lr/D       0        Rs*Lm/D  ]
+    [  Rr*Lm/D       0       -Rr*Ls/D    -p*wm    ]
+    [    0        Rr*Lm/D     p*wm     -Rr*Ls/D   ]
+```
+where D = Delta, wm = omega_m
 
 The eigenvalues $\lambda$ satisfy $\det(\mathbf{A} - \lambda\mathbf{I}) = 0$, which yields the characteristic equation:
 
@@ -872,15 +819,12 @@ A system with $S < 100$ is generally considered **non-stiff** and can be efficie
 
 Before the fault ($t < 0$), the machine is in steady-state operation. In the stationary reference frame, the steady-state phasor equations are:
 
-$$
-\begin{bmatrix}
-R_s + j\omega_s L_s & j\omega_s L_m \\
-j s \omega_s L_m & R_r + j s \omega_s L_r
-\end{bmatrix}
-\begin{bmatrix} I_{s0} \\ I_{r0} \end{bmatrix}
-=
-\begin{bmatrix} V_{s0} \\ 0 \end{bmatrix}
-$$
+```text
+[ Rs + j*ws*Ls      j*ws*Lm    ] [Is0]   [Vs0]
+[                           ] [   ] = [   ]
+[ j*s*ws*Lm   Rr + j*s*ws*Lr ] [Ir0]   [ 0 ]
+```
+where ws = omega_s, s = slip
 
 where $V_{s0}$ is the peak stator voltage space vector at the instant of the fault:
 
@@ -1262,7 +1206,7 @@ $$
 
 ### 10.3 No Effect on Electromagnetic Torque in the Ideal Balanced Model
 
-In the ideal balanced model, the entire electromagnetic torque waveform is **exactly invariant** to $\theta_0$, not merely the peak absolute value. The reason is rotational symmetry: multiplying the pre-fault voltage by $e^{j\theta_0}$ rotates all initial flux and current space vectors by the same factor, and this common rotation cancels in the torque expression $T_e = -(3/2)p\,\operatorname{Im}\{\psi_s i_s^*\}$.
+In the ideal balanced model, the entire electromagnetic torque waveform is **exactly invariant** to $\theta_0$, not merely the peak absolute value. The reason is rotational symmetry: multiplying the pre-fault voltage by $e^{j\theta_0}$ rotates all initial flux and current space vectors by the same factor, and this common rotation cancels in the torque expression $T_e = -(3/2)p\,Im\{\psi_s i_s^*\}$.
 
 The DC offset does redistribute among the three physical phases as $\theta_0$ varies, but the total torque - a scalar invariant under common rotation of all space vectors - is unchanged.
 
@@ -1277,7 +1221,7 @@ For the ideal balanced, linear, symmetric three-phase terminal short-circuit mod
 **Proof:** The initial condition is $V_{s0} = \sqrt{2} V_{ph} e^{j\theta_0}$. The pre-fault system is linear, so $I_{s0}$, $I_{r0}$, $\psi_{s0}$, and $\psi_{r0}$ are each proportional to $e^{j\theta_0}$. At every subsequent time step, the ODE system is rotationally symmetric: if $\{\psi_s(t), \psi_r(t)\}$ is a solution starting from $\theta_0 = 0$, then $\{e^{j\theta_0}\psi_s(t), e^{j\theta_0}\psi_r(t)\}$ is the solution starting from $\theta_0$. The torque is:
 
 $$
-T_e = -\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\}
+T_e = -\frac{3}{2}p\,Im\{\psi_s i_s^*\}
 $$
 
 where $i_s = (L_r \psi_s - L_m \psi_r)/\Delta$. Under the common rotation:
@@ -1288,7 +1232,7 @@ i_s' = e^{j\theta_0}i_s, \quad i_r' = e^{j\theta_0}i_r
 $$
 
 $$
-T_e' = -\frac{3}{2}p\,\operatorname{Im}\{\psi_s' i_s'^*\} = -\frac{3}{2}p\,\operatorname{Im}\{e^{j\theta_0}\psi_s \cdot (e^{j\theta_0}i_s)^*\} = -\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\} = T_e
+T_e' = -\frac{3}{2}p\,Im\{\psi_s' i_s'^*\} = -\frac{3}{2}p\,Im\{e^{j\theta_0}\psi_s \cdot (e^{j\theta_0}i_s)^*\} = -\frac{3}{2}p\,Im\{\psi_s i_s^*\} = T_e
 $$
 
 Therefore the full torque trajectory $T_e(t)$ is identical for all $\theta_0$. The phase currents and $d$/$q$ axis components redistribute with $\theta_0$, but the electromagnetic torque does not.
@@ -1583,7 +1527,7 @@ While this duplicates the $i_s$ computation (it is computed once in `rhs()` and 
 The torque is computed using:
 
 $$
-T_e = -\frac{3}{2}p\,\operatorname{Im}\{\psi_s i_s^*\}
+T_e = -\frac{3}{2}p\,Im\{\psi_s i_s^*\}
 $$
 
 This is the instantaneous electromagnetic torque. It is computed at the beginning of each time step, before the state is advanced.
@@ -1985,20 +1929,11 @@ $$
 
 The flux-current relation becomes:
 
-$$
-\begin{bmatrix}
-\psi_s \\ \psi_{r1} \\ \psi_{r2}
-\end{bmatrix}
-=
-\begin{bmatrix}
-L_s & L_m & L_m \\
-L_m & L_{r1} & L_{r12} \\
-L_m & L_{r12} & L_{r2}
-\end{bmatrix}
-\begin{bmatrix}
-i_s \\ i_{r1} \\ i_{r2}
-\end{bmatrix}
-$$
+```text
+[psi_s ]   [ Ls    Lm     Lm   ] [i_s ]
+[psi_r1] = [ Lm   Lr1   Lr12  ] [i_r1]
+[psi_r2]   [ Lm   Lr12   Lr2  ] [i_r2]
+```
 
 This 3x3 system must be inverted at each time step.
 
