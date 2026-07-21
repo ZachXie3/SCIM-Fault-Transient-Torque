@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Estimate the dominant electrical time constants and a first-pass transient electromagnetic torque envelope after a balanced three-phase bolted terminal short circuit on a squirrel-cage induction machine (SCIM).
+Estimate the dominant electrical time constants and a first-pass transient electromagnetic torque envelope after a balanced three-phase zero-impedance short circuit applied directly at the motor terminals on a squirrel-cage induction machine (SCIM).
 
 Use this workflow for screening and order-of-magnitude checks. Use the dq/state-space workflow when point-on-wave, first-cycle shape, speed dynamics, or detailed torque waveform is important.
 

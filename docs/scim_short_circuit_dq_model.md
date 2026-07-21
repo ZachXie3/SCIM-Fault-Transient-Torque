@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Compute transient electromagnetic torque after a balanced three-phase bolted terminal short circuit using a stationary-reference-frame dq/space-vector induction-machine model.
+Compute transient electromagnetic torque after a balanced three-phase zero-impedance short circuit applied directly at the motor terminals, using a stationary-reference-frame dq/space-vector induction-machine model.
 
 This workflow is preferred when first-cycle torque shape, point-on-wave, stator dc offset, initial flux angle, or speed dynamics matter.
 
@@ -85,20 +85,22 @@ $$
 \omega_r^e=p\omega_m
 $$
 
-For a bolted three-phase terminal short circuit at $t=0$:
+The fault model assumes:
+- **Infinite bus** — the supply voltage behind the fault is unchanged by the fault current.
+- **Zero-impedance fault** — no resistance or reactance at the fault point.
+- **Fault at motor terminals** — no cable, transformer, or feeder impedance between the source and the fault.
+- **Balanced three-phase** — all three phases are shorted together.
 
-$$
-v_s(t\ge 0)=0
-$$
+Under these assumptions all three phase terminals are forced to the same electrical potential ($V_a = V_b = V_c$). Applying the Clarke transformation (Section 1.2 of the detailed document) gives $V_\alpha = 0$ and $V_\beta = 0$, while the common-mode component $V_0$ is arbitrary. The three-wire machine has no zero-sequence path, so only the $\alpha\beta$ components matter, and the stator voltage space vector $v_s = V_\alpha + jV_\beta$ is zero after the fault:
 
 ---
 
 ## 3. Torque equation
 
-Using stationary dq quantities:
+Using stationary-frame αβ quantities:
 
 $$
-T_e=\frac{3}{2}p\left(\psi_{ds}i_{qs}-\psi_{qs}i_{ds}\right)
+T_e=\frac{3}{2}p\left(\psi_{\alpha s}i_{\beta s}-\psi_{\beta s}i_{\alpha s}\right)
      =-\frac{3}{2}p\operatorname{Im}\left\{\psi_s i_s^*\right\}
 $$
 

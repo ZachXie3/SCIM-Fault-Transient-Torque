@@ -25,9 +25,9 @@
    - 2.4 [The Flux-Current Matrix and Its Inverse](#24-the-flux-current-matrix-and-its-inverse)
    - 2.5 [The Leakage Determinant Delta](#25-the-leakage-determinant-delta)
    - 2.6 [Physical Interpretation of the Inverse](#26-physical-interpretation-of-the-inverse)
-3. [Electromagnetic Torque in d-q Form](#3-electromagnetic-torque-in-d-q-form)
+3. [Electromagnetic Torque in αβ Form](#3-electromagnetic-torque-in-αβ-form)
    - 3.1 [Torque from Energy and Co-Energy](#31-torque-from-energy-and-co-energy)
-   - 3.2 [The d-q Torque Expression](#32-the-d-q-torque-expression)
+   - 3.2 [The αβ Torque Expression](#32-the-αβ-torque-expression)
    - 3.3 [Equivalent Forms and Numerical Considerations](#33-equivalent-forms-and-numerical-considerations)
    - 3.4 [Sign Convention](#34-sign-convention)
 
@@ -61,7 +61,7 @@
 
 **Part IV - The Short-Circuit Transient**
 8. [The Short-Circuit Condition](#8-the-short-circuit-condition)
-   - 8.1 [What a Bolted Three-Phase Short Circuit Means](#81-what-a-bolted-three-phase-short-circuit-means)
+   - 8.1 [What a Zero-Impedance Terminal Short Circuit Means](#81-what-a-zero-impedance-terminal-short-circuit-means)
    - 8.2 [The Fault as an Initial-Value Problem](#82-the-fault-as-an-initial-value-problem)
    - 8.3 [Flux Continuity at Fault Inception](#83-flux-continuity-at-fault-inception)
    - 8.4 [Why Current Can Change Discontinuously but Flux Cannot](#84-why-current-can-change-discontinuously-but-flux-cannot)
@@ -407,7 +407,7 @@ The leakage coefficient is $\sigma \approx 0.043$, indicating typical induction-
 
 ### 2.4 The Flux-Current Matrix and Its Inverse
 
-In the stationary d-q frame, the flux-current relationship is:
+In the stationary αβ frame, the flux-current relationship is:
 
 ```text
 [psi_s]   [Ls  Lm] [i_s]
@@ -475,7 +475,7 @@ The negative sign on the mutual term reflects Lenz's law: the rotor current oppo
 
 ---
 
-## 3. Electromagnetic Torque in d-q Form
+## 3. Electromagnetic Torque in αβ Form
 
 ### 3.1 Torque from Energy and Co-Energy
 
@@ -493,15 +493,15 @@ $$
 
 Evaluating the derivative with the 2x2 d-q inductance matrix yields the torque expression.
 
-### 3.2 The d-q Torque Expression
+### 3.2 The αβ Torque Expression
 
-For the amplitude-invariant d-q transformation, the torque is:
+For the amplitude-invariant stationary-frame transformation, the torque is:
 
 $$
-T_e = \frac{3}{2} p \left(\psi_{ds} i_{qs} - \psi_{qs} i_{ds}\right)
+T_e = \frac{3}{2} p \left(\psi_{\alpha s} i_{\beta s} - \psi_{\beta s} i_{\alpha s}\right)
 $$
 
-where $p$ is the number of pole pairs. In complex form:
+where $p$ is the number of pole pairs. In complex space-vector form:
 
 $$
 T_e = -\frac{3}{2} p \; Im\{\psi_s \cdot i_s^*\}
@@ -512,13 +512,13 @@ where $i_s^*$ denotes the complex conjugate of $i_s$.
 **Derivation sketch:** Expanding $\psi_s i_s^*$:
 
 $$
-\psi_s i_s^* = (\psi_{ds} + j\psi_{qs})(i_{ds} - j i_{qs}) = \psi_{ds} i_{ds} + \psi_{qs} i_{qs} + j(\psi_{qs} i_{ds} - \psi_{ds} i_{qs})
+\psi_s i_s^* = (\psi_{\alpha s} + j\psi_{\beta s})(i_{\alpha s} - j i_{\beta s}) = \psi_{\alpha s} i_{\alpha s} + \psi_{\beta s} i_{\beta s} + j(\psi_{\beta s} i_{\alpha s} - \psi_{\alpha s} i_{\beta s})
 $$
 
-The imaginary part is $\psi_{qs} i_{ds} - \psi_{ds} i_{qs} = -(\psi_{ds} i_{qs} - \psi_{qs} i_{ds})$, giving:
+The imaginary part is $\psi_{\beta s} i_{\alpha s} - \psi_{\alpha s} i_{\beta s} = -(\psi_{\alpha s} i_{\beta s} - \psi_{\beta s} i_{\alpha s})$, giving:
 
 $$
--\frac{3}{2} p Im\{\psi_s i_s^*\} = \frac{3}{2} p (\psi_{ds} i_{qs} - \psi_{qs} i_{ds})
+-\frac{3}{2} p Im\{\psi_s i_s^*\} = \frac{3}{2} p (\psi_{\alpha s} i_{\beta s} - \psi_{\beta s} i_{\alpha s})
 $$
 
 **Implementation:** `scim_calc/circuit.py:torque_from_flux_current()`, line 44. The factor $3/2$ is hard-coded as `-1.5`.
@@ -682,10 +682,10 @@ This is a system of **three complex differential equations** (or **five real dif
 The electrical subsystem can be written as four real differential equations for the flux components. With $\omega_m$ held constant (speed dynamics disabled), the system is **linear time-invariant (LTI):**
 
 ```text
-d/dt [psi_ds]   [ -Rs*Lr/D       0        Rs*Lm/D       0     ] [psi_ds]
-    [psi_qs] = [     0       -Rs*Lr/D       0        Rs*Lm/D ] [psi_qs]
-    [psi_dr]   [  Rr*Lm/D       0       -Rr*Ls/D    -p*wm   ] [psi_dr]
-    [psi_qr]   [     0        Rr*Lm/D     p*wm    -Rr*Ls/D ] [psi_qr]
+d/dt [psi_αs]   [ -Rs*Lr/D       0        Rs*Lm/D       0     ] [psi_αs]
+    [psi_βs] = [     0       -Rs*Lr/D       0        Rs*Lm/D ] [psi_βs]
+    [psi_αr]   [  Rr*Lm/D       0       -Rr*Ls/D    -p*wm   ] [psi_αr]
+    [psi_βr]   [     0        Rr*Lm/D     p*wm    -Rr*Ls/D ] [psi_βr]
 ```
 where D = Delta = Ls*Lr - Lm^2, wm = omega_m, p = pole_pairs
 
@@ -1005,15 +1005,40 @@ The limit $s_{high} \leq 0.8$ prevents the search from entering the plugging reg
 
 ## 8. The Short-Circuit Condition
 
-### 8.1 What a Bolted Three-Phase Short Circuit Means
+### 8.1 What a Zero-Impedance Terminal Short Circuit Means
 
-A **bolted balanced three-phase terminal short circuit** forces the stator terminal voltage space vector to zero:
+This model assumes a **zero-impedance balanced three-phase short circuit applied directly at the motor terminals**. This means:
+
+- **Infinite bus** — the upstream supply voltage is unaffected by the fault current.
+- **Zero fault impedance** — no resistance or reactance at the fault point.
+- **Fault at motor terminals** — no cable, transformer, or feeder impedance between the source and the fault point.
+- **Balanced three-phase** — all three phase terminals are shorted together.
+
+Under these assumptions all three phase terminals are forced to the same electrical potential:
 
 $$
-v_s(t) = 0 \quad \text{for all } t \ge 0
+V_a = V_b = V_c
 $$
 
-In the stationary d-q frame this is $v_{ds}(t) = v_{qs}(t) = 0$. In a three-wire positive-sequence d-q model, this is equivalent to zero line-to-line voltage at the motor terminals. The term "bolted" means the fault has zero impedance, producing the highest possible fault current and torque (conservative case for equipment rating). Whether the short point is grounded is not material unless zero-sequence paths are explicitly modeled.
+This equality does not require each phase voltage to be zero — it only requires they be equal, leaving an arbitrary common-mode (zero-sequence) component. Applying the amplitude-invariant Clarke transformation (Section 1.2):
+
+$$
+\begin{aligned}
+V_\alpha &= \frac{2}{3}\left(V_a - \frac{1}{2}V_b - \frac{1}{2}V_c\right) \\
+V_\beta  &= \frac{2}{3}\cdot\frac{\sqrt{3}}{2}\,(V_b - V_c) \\
+V_0      &= \frac{1}{3}(V_a + V_b + V_c)
+\end{aligned}
+$$
+
+Substituting $V_a = V_b = V_c$ gives:
+
+$$
+V_\alpha = 0, \qquad V_\beta = 0
+$$
+
+while $V_0$ remains arbitrary. The induction motor is modeled as a three-wire machine with no zero-sequence path, so $V_0$ does not participate in the dynamics. The stator voltage equation therefore uses only the $\alpha\beta$ components, which are identically zero after the fault.
+
+This produces the highest possible fault current and torque, the conservative case for equipment rating. If any of the assumptions above are relaxed (finite source impedance, fault not at terminals, unbalanced fault), the terminal boundary conditions change — the same machine model applies, with different $\alpha\beta$ voltage constraints.
 
 ### 8.2 The Fault as an Initial-Value Problem
 
@@ -1824,7 +1849,7 @@ Angle dependence may appear in extended models that include unbalanced faults, s
 
 ### 17.2 Balanced Fault Only
 
-**Assumption:** The fault is a balanced three-phase bolted short circuit at the motor terminals. In the positive-sequence d-q model, this is equivalent to zero line-to-line voltage at the terminals: the stator voltage space vector is forced to zero. Whether the short point is grounded is not material unless zero-sequence paths are explicitly modelled.
+**Assumption:** The fault is a balanced three-phase zero-impedance short circuit applied directly at the motor terminals. In the positive-sequence d-q model, this is equivalent to zero line-to-line voltage at the terminals: the stator voltage space vector is forced to zero. Whether the short point is grounded is not material unless zero-sequence paths are explicitly modelled.
 
 **Reality:** Power system faults can be:
 - **Line-to-line (L-L):** Two phases shorted together (not modelled).
@@ -1876,7 +1901,7 @@ This increases the model order by two (two additional flux states). The paramete
 
 **Reality:** The motor is connected through cables, transformers, and the upstream network, all of which have impedance. A fault may not be exactly at the motor terminals - it could be on the feeder cable or within the motor itself.
 
-**Effect:** Additional impedance between the source and the fault reduces the short-circuit current and torque. The assumption of a bolted fault at the terminals is the most conservative case.
+**Effect:** Additional impedance between the source and the fault reduces the short-circuit current and torque. The assumption of a zero-impedance fault at the terminals is the most conservative case.
 
 ### 17.7 No Torsional Dynamics
 
