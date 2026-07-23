@@ -2,31 +2,31 @@
     // ============================================================
     // 1. Equivalent circuit parameters (per-phase, stator-referred)
     // ============================================================
-    "Rs": 0.006,       // Stator resistance, ohm/phase
-    "Rr": 0.020,       // Rotor resistance referred to stator, ohm/phase
+    "Rs": 0.069966,       // Stator resistance, ohm/phase
+    "Rr": 0.072979,       // Rotor resistance referred to stator, ohm/phase
 
     // Uncomment ONE block below — EITHER reactances OR inductances:
     // --- Reactances at frequency f ---
-    // "Xs": 1.272654,       // Stator leakage reactance at f, ohm/phase
-    // "Xr": 0.986283,       // Rotor leakage reactance referred to stator at f, ohm/phase
-    // "Xm": 42.29672,      // Magnetizing reactance at f, ohm/phase
+    "Xs": 1.272654,       // Stator leakage reactance at f, ohm/phase
+    "Xr": 0.986283,       // Rotor leakage reactance referred to stator at f, ohm/phase
+    "Xm": 42.29672,      // Magnetizing reactance at f, ohm/phase
 
     // --- Inductances (comment reactances above and uncomment these) ---
-    "Lls": 0.005, // Stator leakage inductance, H
-    "Llr": 0.010, // Rotor leakage inductance referred to stator, H
-    "Lm": 0.100, // Magnetizing inductance, H
+    // "Lls": 0.0005, // Stator leakage inductance, H
+    // "Llr": 0.0010, // Rotor leakage inductance referred to stator, H
+    // "Lm": 0.0100, // Magnetizing inductance, H
 
     // ============================================================
     // 2. Nameplate rated values
     // ============================================================
-    "V_LL": 3810.0,     // Pre-fault line-line RMS voltage, V RMS
+    "V_LL": 4000.0,     // Pre-fault line-line RMS voltage, V RMS
     "f": 60.0,         // Electrical frequency, Hz
-    "poles": 4,        // Total number of poles (e.g. 2, 4, 6...); code divides by 2 internally
-    "slip": 0.0030,    // Pre-fault slip, pu (used as initial guess when HP/kW provided)
+    "poles": 2,        // Total number of poles (e.g. 2, 4, 6...); code divides by 2 internally
+    "slip": 0.0050,    // Pre-fault slip, pu (used as initial guess when HP/kW provided)
 
     // Rated mechanical output power (uncomment ONE; if neither provided, slip is used as-is)
-    // "HP": 2000,        // Horsepower (1 HP = 746 W)
-    "kW": 5500,   // Kilowatts
+    "HP": 2000,        // Horsepower (1 HP = 746 W)
+    // "kW": 372.85,   // Kilowatts
 
     "CONNECTION": "wye", // Stator winding connection: "wye" or "delta"
 
@@ -54,5 +54,5 @@
     // Quick calculation options
     "DC_OFFSET_FACTOR": 0.0,     // First-cycle asymmetry sensitivity (0 = none, 1 = strong), pu
     "FAULT_ANGLE_DEG": 0.0,      // Fault inception angle for dc sensitivity term, deg
-    "TORQUE_FREQUENCY_MODE": "line"  // Torque oscillation frequency: 'line' or 'rotor', enum
+    "TORQUE_FREQUENCY_MODE": "rotor"  // Torque oscillation frequency: 'line' or 'rotor', enum
 }

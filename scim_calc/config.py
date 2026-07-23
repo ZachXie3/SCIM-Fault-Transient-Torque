@@ -42,12 +42,12 @@ def normalize_params(cfg):
     p["pole_pairs"] = cfg["poles"] // 2
 
     # Inductance / reactance dual representation
-    if "Ls" in cfg and "Lr" in cfg and "Lm" in cfg:
-        p["Xs"] = p["omega_s"] * cfg["Ls"]
-        p["Xr"] = p["omega_s"] * cfg["Lr"]
+    if "Lls" in cfg and "Llr" in cfg and "Lm" in cfg:
+        p["Xs"] = p["omega_s"] * cfg["Lls"]
+        p["Xr"] = p["omega_s"] * cfg["Llr"]
         p["Xm"] = p["omega_s"] * cfg["Lm"]
-        p["Lls"] = cfg["Ls"]
-        p["Llr"] = cfg["Lr"]
+        p["Lls"] = cfg["Lls"]
+        p["Llr"] = cfg["Llr"]
         p["Lm"] = cfg["Lm"]
     else:
         p["Xs"] = cfg["Xs"]
